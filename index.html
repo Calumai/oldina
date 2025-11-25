@@ -34,7 +34,8 @@
             </p>
             <!-- 用戶ID顯示，方便協作/測試 -->
             <div id="user-id-display" class="text-xs text-gray-400 mt-2 truncate">
-                正在初始化...
+                <!-- 更改為直接顯示「正在連線中...」 -->
+                正在連線中...
             </div>
         </header>
 
@@ -109,14 +110,13 @@
         // 全域變數 (由 Canvas 環境提供)
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
         const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
-        // FIX: 修正了變數名稱大小寫不匹配的問題，將 __initialAuthToken 改回 __initial_auth_token
         const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
         // 初始化 Firebase 服務
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
-        setLogLevel('debug'); // 開啟 Firebase 除錯日誌
+        // 移除 setLogLevel('debug'); 以減少初始化開銷
 
         let userId = null;
         let isAuthReady = false;
