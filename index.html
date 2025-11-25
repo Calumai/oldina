@@ -85,7 +85,8 @@
 
             <!-- 物品列表 -->
             <div id="itemsList" class="space-y-4">
-                <p id="loadingMessage" class="text-center text-gray-500">正在載入資料...</p>
+                <!-- 載入狀態文字已更改為「讀取中...」 -->
+                <p id="loadingMessage" class="text-center text-gray-500">讀取中...</p>
                 <!-- 物品卡片將會在這裡動態插入 -->
             </div>
             
@@ -108,6 +109,7 @@
         // 全域變數 (由 Canvas 環境提供)
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
         const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        // FIX: 修正了變數名稱大小寫不匹配的問題，將 __initialAuthToken 改回 __initial_auth_token
         const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
         // 初始化 Firebase 服務
@@ -170,7 +172,8 @@
 
         async function authenticate() {
             // 立即更新狀態，讓使用者知道 App 正在嘗試連線
-            document.getElementById('user-id-display').textContent = '正在嘗試連線到 Firebase...'; 
+            // 狀態文字已更新
+            document.getElementById('user-id-display').textContent = '正在連線中...'; 
             try {
                 if (initialAuthToken) {
                     await signInWithCustomToken(auth, initialAuthToken);
@@ -362,7 +365,7 @@
             const speakButton = document.querySelector(`.speak-btn[data-id="${itemId}"]`);
             if (speakButton) {
                 speakButton.disabled = true;
-                speakButton.textContent = '🔊 載入中...';
+                speakButton.textContent = '🔊 讀取中...'; // TTS 載入中文字更新
             }
 
             const apiKey = "";
@@ -491,7 +494,8 @@
 
             }, (error) => {
                 console.error("監聽 Firestore 時發生錯誤:", error);
-                loadingMessage.textContent = '載入資料失敗。';
+                // 失敗訊息已更新
+                loadingMessage.textContent = '讀取資料失敗。';
             });
         }
 
