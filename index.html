@@ -3,307 +3,310 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>2/21 世界母語日 - 攤位互動主控台</title>
+    <title>2/21 母語日 - 雲端連線版</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0fdf4; }
-        .btn-push { transition: all 0.1s; box-shadow: 0 4px 0 #b91c1c; }
-        .btn-push:active { transform: translateY(4px); box-shadow: 0 0 0 #b91c1c; }
-        .flag-btn { height: 150px; border-radius: 20px; font-size: 2rem; font-weight: bold; transition: transform 0.2s; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0fdf4; touch-action: manipulation; }
+        .btn-push { transition: all 0.1s; box-shadow: 0 6px 0 #b91c1c; }
+        .btn-push:active { transform: translateY(6px); box-shadow: 0 0 0 #b91c1c; }
+        .flag-btn { height: 160px; border-radius: 20px; font-size: 2rem; font-weight: bold; transition: transform 0.1s; }
         .flag-btn:active { transform: scale(0.95); }
+        [v-cloak] { display: none; }
     </style>
 </head>
 <body class="h-screen overflow-hidden text-slate-800">
 
-<div id="app" class="h-full flex flex-col">
+<div id="app" v-cloak class="h-full flex flex-col">
 
-    <div v-if="view === 'home'" class="flex-1 flex flex-col items-center justify-center space-y-8 bg-gradient-to-br from-green-400 to-blue-500 text-white">
-        <h1 class="text-5xl font-black mb-4 animate__animated animate__bounceIn">攤位互動主控台</h1>
-        <p class="text-xl opacity-90">2/21 世界母語日專用</p>
-        <div class="flex space-x-8 mt-8">
-            <button @click="enterRole('admin')" class="bg-white text-blue-600 px-8 py-6 rounded-2xl shadow-xl text-2xl font-bold hover:scale-105 transition transform">
-                👨‍🏫 我是關主<br><span class="text-sm font-normal text-gray-500">(電腦/大螢幕端)</span>
+    <div v-if="view === 'home'" class="flex-1 flex flex-col items-center justify-center space-y-8 bg-gradient-to-br from-green-400 to-blue-500 text-white p-4 text-center">
+        <h1 class="text-4xl md:text-5xl font-black mb-2 animate__animated animate__bounceIn">母語日互動主控台</h1>
+        <p class="text-lg opacity-90">雲端連線版 (PeerJS)</p>
+        
+        <div class="flex flex-col md:flex-row gap-6 mt-8 w-full max-w-2xl px-4">
+            <button @click="initAdmin" class="flex-1 bg-white text-blue-600 py-8 rounded-2xl shadow-xl text-2xl font-bold hover:scale-105 transition transform flex flex-col items-center justify-center">
+                <span>👨‍🏫 我是關主 (老師)</span>
+                <span class="text-sm font-normal text-gray-500 mt-2">建立房間，顯示在大螢幕</span>
             </button>
-            <button @click="enterRole('client')" class="bg-white text-green-600 px-8 py-6 rounded-2xl shadow-xl text-2xl font-bold hover:scale-105 transition transform">
-                🙋‍♂️ 我是學生<br><span class="text-sm font-normal text-gray-500">(手機/平板端)</span>
+            <button @click="view = 'scan'" class="flex-1 bg-white text-green-600 py-8 rounded-2xl shadow-xl text-2xl font-bold hover:scale-105 transition transform flex flex-col items-center justify-center">
+                <span>🙋‍♂️ 我是學生 (手機)</span>
+                <span class="text-sm font-normal text-gray-500 mt-2">掃碼或輸入ID連線</span>
             </button>
         </div>
     </div>
 
-    <div v-if="view === 'admin'" class="h-full flex">
-        <div class="w-1/4 bg-slate-800 text-white p-6 flex flex-col space-y-6">
-            <h2 class="text-2xl font-bold text-yellow-400">🎮 控制中心</h2>
+    <div v-if="view === 'scan'" class="flex-1 flex flex-col items-center justify-center bg-slate-100 p-6">
+        <div class="bg-white p-8 rounded-3xl shadow-xl w-full max-w-md text-center">
+            <h2 class="text-2xl font-bold mb-6 text-slate-700">輸入老師的房間 ID</h2>
+            <input v-model="targetId" type="text" placeholder="例如: happy-123" class="w-full text-center text-3xl font-mono border-2 border-gray-300 rounded-xl py-4 mb-6 uppercase focus:border-green-500 outline-none">
+            <button @click="connectToAdmin" :disabled="!targetId" class="w-full bg-green-600 text-white py-4 rounded-xl text-xl font-bold hover:bg-green-700 disabled:opacity-50">
+                🚀 連線！
+            </button>
+            <button @click="view = 'home'" class="mt-4 text-gray-500 underline">返回首頁</button>
+        </div>
+    </div>
+
+    <div v-if="view === 'admin'" class="h-full flex flex-col md:flex-row">
+        <div class="w-full md:w-1/4 bg-slate-800 text-white p-4 flex flex-col space-y-4">
+            <div class="bg-slate-700 p-3 rounded-lg text-center">
+                <p class="text-xs text-gray-400 mb-1">房間 ID (請學生輸入):</p>
+                <div class="text-2xl font-mono font-bold text-yellow-400 tracking-wider">{{ myId }}</div>
+            </div>
             
-            <div class="space-y-4">
-                <p class="text-gray-400 text-sm font-bold uppercase">選擇遊戲模式</p>
-                <button @click="setMode('left_right')" :class="{'bg-blue-600': mode === 'left_right', 'bg-slate-700': mode !== 'left_right'}" class="w-full text-left px-4 py-3 rounded-lg hover:bg-blue-500 transition">
-                    🚩 左右護法 (聽音辨位)
-                </button>
-                <button @click="setMode('ordering')" :class="{'bg-green-600': mode === 'ordering', 'bg-slate-700': mode !== 'ordering'}" class="w-full text-left px-4 py-3 rounded-lg hover:bg-green-500 transition">
-                    🍔 點餐大考驗 (看圖說話)
-                </button>
-                <button @click="setMode('lottery')" :class="{'bg-purple-600': mode === 'lottery', 'bg-slate-700': mode !== 'lottery'}" class="w-full text-left px-4 py-3 rounded-lg hover:bg-purple-500 transition">
-                    🎁 幸運大抽獎
-                </button>
+            <div class="flex-1 space-y-3 overflow-y-auto">
+                <p class="text-gray-400 text-xs font-bold uppercase">切換模式</p>
+                <button @click="setMode('left_right')" :class="mode === 'left_right' ? 'bg-blue-600' : 'bg-slate-700'" class="w-full text-left px-4 py-3 rounded-lg transition">🚩 左右護法</button>
+                <button @click="setMode('ordering')" :class="mode === 'ordering' ? 'bg-green-600' : 'bg-slate-700'" class="w-full text-left px-4 py-3 rounded-lg transition">🍔 點餐大考驗</button>
+                <button @click="setMode('lottery')" :class="mode === 'lottery' ? 'bg-purple-600' : 'bg-slate-700'" class="w-full text-left px-4 py-3 rounded-lg transition">🎁 幸運抽獎</button>
             </div>
 
-            <div class="mt-auto border-t border-slate-600 pt-4">
-                <p class="text-gray-400 text-sm">即時狀態</p>
-                <div class="flex items-center mt-2">
-                    <span class="w-3 h-3 bg-green-500 rounded-full mr-2 animate-pulse"></span>
-                    <span>學生端連線中...</span>
+            <div class="pt-2 border-t border-slate-600">
+                <div class="flex items-center text-sm">
+                    <span class="w-2 h-2 rounded-full mr-2" :class="connectionCount > 0 ? 'bg-green-500 animate-pulse' : 'bg-red-500'"></span>
+                    <span>已連線裝置: {{ connectionCount }}</span>
                 </div>
-                <button @click="resetGame" class="mt-4 w-full bg-red-600 py-2 rounded text-sm hover:bg-red-700">重置所有狀態</button>
             </div>
         </div>
 
-        <div class="w-3/4 bg-gray-100 flex flex-col items-center justify-center relative p-8">
+        <div class="flex-1 bg-gray-100 flex flex-col items-center justify-center p-4 relative overflow-hidden">
             
-            <div v-if="mode === 'left_right'" class="text-center w-full">
-                <h3 class="text-3xl font-bold mb-8 text-slate-600">左右護法：你聽到了哪個詞？</h3>
-                
-                <div class="flex justify-center space-x-8 mb-12">
-                     <button @click="adminTrigger('left')" class="bg-red-500 text-white w-48 h-48 rounded-3xl text-4xl font-bold shadow-lg hover:bg-red-600 transition transform hover:scale-105 flex flex-col items-center justify-center">
-                        <span>🔴 左</span>
-                        <span class="text-lg mt-2 font-normal opacity-80">(Kawiri)</span>
-                    </button>
-                    <button @click="adminTrigger('right')" class="bg-white text-slate-800 border-4 border-slate-200 w-48 h-48 rounded-3xl text-4xl font-bold shadow-lg hover:bg-gray-50 transition transform hover:scale-105 flex flex-col items-center justify-center">
-                        <span>⚪ 右</span>
-                        <span class="text-lg mt-2 font-normal opacity-80">(Kawanan)</span>
-                    </button>
+            <div v-if="connectionCount === 0" class="absolute inset-0 bg-black/80 z-50 flex flex-col items-center justify-center text-white p-8 text-center backdrop-blur-sm">
+                <h3 class="text-3xl font-bold mb-4">等待學生連線...</h3>
+                <div class="bg-white p-4 rounded-xl mb-4">
+                    <img :src="`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(shareUrl)}`" alt="QR Code" class="w-48 h-48">
                 </div>
+                <p class="text-xl">請掃描 或 輸入 ID: <span class="text-yellow-400 font-mono font-bold">{{ myId }}</span></p>
+                <button @click="connectionCount = 1" class="mt-8 text-sm text-gray-400 underline">跳過等待 (測試用)</button>
+            </div>
 
-                <div class="bg-white p-6 rounded-xl shadow-inner w-full max-w-2xl h-32 flex items-center justify-center space-x-4">
-                    <p v-if="!lastClientAction" class="text-gray-400">等待學生舉旗...</p>
-                    <div v-else class="animate__animated animate__tada flex flex-col items-center">
-                        <span class="text-6xl">{{ lastClientAction === 'left' ? '🔴' : '⚪' }}</span>
-                        <span class="text-xl font-bold mt-2 text-slate-700">學生舉了{{ lastClientAction === 'left' ? '紅旗' : '白旗' }}！</span>
-                        <span v-if="lastClientAction === currentTarget" class="text-green-600 font-black text-2xl mt-1">✅ 答對了！</span>
-                        <span v-else-if="currentTarget" class="text-red-500 font-black text-2xl mt-1">❌ 哎呀！</span>
-                    </div>
+            <div v-if="mode === 'left_right'" class="text-center w-full max-w-4xl">
+                <h3 class="text-2xl md:text-4xl font-bold mb-8 text-slate-700">左右護法：聽音辨位</h3>
+                <div class="flex justify-center gap-6 mb-12">
+                    <div class="w-32 h-32 md:w-48 md:h-48 bg-red-500 text-white rounded-3xl flex items-center justify-center text-4xl shadow-lg">左</div>
+                    <div class="w-32 h-32 md:w-48 md:h-48 bg-white border-4 border-slate-200 text-slate-800 rounded-3xl flex items-center justify-center text-4xl shadow-lg">右</div>
                 </div>
+                <div v-if="lastAction" class="bg-white p-6 rounded-2xl shadow-xl inline-block animate__animated animate__tada">
+                    <span class="text-6xl block mb-2">{{ lastAction === 'left' ? '🔴' : '⚪' }}</span>
+                    <span class="text-xl font-bold text-slate-600">學生舉了{{ lastAction === 'left' ? '紅旗' : '白旗' }}!</span>
+                </div>
+                <div v-else class="text-gray-400 text-xl animate-pulse">等待學生舉旗...</div>
             </div>
 
             <div v-if="mode === 'ordering'" class="text-center w-full h-full flex flex-col items-center justify-center">
-                <div v-if="!currentMenuItem" class="text-gray-400 text-2xl">請選擇一道菜上架...</div>
-                
-                <div v-else class="bg-white p-8 rounded-3xl shadow-2xl animate__animated animate__zoomIn max-w-md w-full">
-                    <div class="text-9xl mb-6">{{ currentMenuItem.emoji }}</div>
-                    <div class="text-4xl font-black text-slate-800 mb-2">{{ currentMenuItem.name }}</div>
-                    <div class="text-2xl text-blue-600 font-mono bg-blue-50 py-2 px-4 rounded-lg inline-block">{{ currentMenuItem.pronunciation }}</div>
+                <div v-if="currentMenu" class="bg-white p-8 rounded-3xl shadow-2xl animate__animated animate__zoomIn max-w-md w-full">
+                    <div class="text-9xl mb-6">{{ currentMenu.emoji }}</div>
+                    <div class="text-4xl font-black text-slate-800 mb-2">{{ currentMenu.name }}</div>
+                    <div class="text-3xl text-blue-600 font-mono bg-blue-50 py-2 rounded-lg">{{ currentMenu.pronunciation }}</div>
                 </div>
-
-                <div class="mt-12 grid grid-cols-4 gap-4 w-full max-w-3xl">
-                    <button v-for="item in menuItems" :key="item.id" @click="showMenu(item)" class="bg-white p-4 rounded-xl shadow hover:shadow-lg transition flex flex-col items-center">
-                        <span class="text-4xl">{{ item.emoji }}</span>
-                        <span class="font-bold mt-2">{{ item.name }}</span>
-                    </button>
-                </div>
+                <div v-else class="text-gray-400 text-2xl">👇 請在手機點選餐點</div>
             </div>
 
             <div v-if="mode === 'lottery'" class="text-center">
-                <h3 class="text-4xl font-black text-purple-600 mb-8">🎁 幸運大抽獎</h3>
-                <div class="bg-white w-96 h-64 flex items-center justify-center rounded-3xl shadow-2xl border-8 border-purple-200 mb-8 overflow-hidden relative">
-                    <div v-if="isRolling" class="text-8xl animate-spin">🎡</div>
-                    <div v-else class="text-6xl font-bold text-slate-800 animate__animated animate__rubberBand">{{ lotteryResult || '準備開始' }}</div>
+                <h3 class="text-4xl font-black text-purple-600 mb-8">幸運大抽獎</h3>
+                <div class="bg-white w-80 h-64 md:w-96 flex items-center justify-center rounded-3xl shadow-2xl border-8 border-purple-200 mb-8">
+                    <div class="text-5xl font-bold text-slate-800">{{ lotteryResult }}</div>
                 </div>
-                <button @click="startLottery" :disabled="isRolling" class="bg-purple-600 text-white px-12 py-4 rounded-full text-2xl font-bold shadow-lg hover:bg-purple-700 disabled:opacity-50 btn-push">
-                    {{ isRolling ? '抽獎中...' : '開始抽獎' }}
+                <button @click="runLottery" :disabled="isRolling" class="bg-purple-600 text-white px-10 py-4 rounded-full text-2xl font-bold shadow-lg hover:bg-purple-700 disabled:opacity-50">
+                    {{ isRolling ? '轉動中...' : '開始抽獎' }}
                 </button>
             </div>
-
         </div>
     </div>
 
     <div v-if="view === 'client'" class="h-full bg-slate-100 p-4 flex flex-col">
-        
-        <div class="bg-white p-4 rounded-2xl shadow-sm mb-4 flex justify-between items-center">
-            <div>
-                <span class="text-xs text-gray-500 block">現在模式</span>
-                <span class="font-bold text-lg text-blue-600">
-                    {{ mode === 'left_right' ? '🚩 左右護法' : (mode === 'ordering' ? '🍔 點餐中' : '🎁 抽獎時刻') }}
-                </span>
-            </div>
-            <div class="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+        <div class="bg-white p-3 rounded-xl shadow-sm mb-4 flex justify-between items-center">
+            <span class="font-bold text-blue-600 text-lg">{{ modeTitles[mode] }}</span>
+            <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">🟢 已連線</span>
         </div>
 
-        <div v-if="mode === 'left_right'" class="flex-1 flex flex-col space-y-4 justify-center">
-            <button @touchstart="clientAction('left')" @click="clientAction('left')" class="flag-btn bg-red-500 text-white shadow-lg flex flex-col items-center justify-center btn-push">
-                <span>🔴</span>
+        <div v-if="mode === 'left_right'" class="flex-1 flex flex-col gap-4 justify-center pb-8">
+            <button @click="sendAction('left')" class="flag-btn bg-red-500 text-white shadow-lg flex flex-col items-center justify-center btn-push">
+                <span class="text-5xl mb-2">🔴</span>
                 <span>左邊 / 是</span>
             </button>
-            <button @touchstart="clientAction('right')" @click="clientAction('right')" class="flag-btn bg-white text-slate-800 border-4 border-slate-200 shadow-lg flex flex-col items-center justify-center btn-push">
-                <span>⚪</span>
+            <button @click="sendAction('right')" class="flag-btn bg-white text-slate-800 border-4 border-slate-200 shadow-lg flex flex-col items-center justify-center btn-push">
+                <span class="text-5xl mb-2">⚪</span>
                 <span>右邊 / 否</span>
             </button>
         </div>
 
-        <div v-if="mode === 'ordering'" class="flex-1 flex flex-col items-center justify-center">
-            <div v-if="currentMenuItem" class="bg-white p-8 rounded-3xl shadow-xl text-center w-full animate__animated animate__fadeInUp">
-                <div class="text-8xl mb-4">{{ currentMenuItem.emoji }}</div>
-                <p class="text-gray-500 mb-2">請大聲唸出：</p>
-                <div class="text-3xl font-black text-blue-600 border-2 border-dashed border-blue-200 p-4 rounded-xl">
-                    {{ currentMenuItem.pronunciation }}
-                </div>
-            </div>
-            <div v-else class="text-gray-400 text-center">
-                <div class="text-6xl mb-4">👀</div>
-                <p>看著老闆的大螢幕...</p>
+        <div v-if="mode === 'ordering'" class="flex-1 overflow-y-auto pb-4">
+            <p class="text-center text-gray-500 mb-4">請點選你想吃的東西：</p>
+            <div class="grid grid-cols-2 gap-4">
+                <button v-for="item in menuItems" :key="item.id" @click="sendMenu(item)" class="bg-white p-4 rounded-xl shadow border-2 border-transparent hover:border-blue-500 active:scale-95 transition flex flex-col items-center h-40 justify-center">
+                    <span class="text-5xl mb-2">{{ item.emoji }}</span>
+                    <span class="font-bold text-lg">{{ item.name }}</span>
+                </button>
             </div>
         </div>
 
         <div v-if="mode === 'lottery'" class="flex-1 flex items-center justify-center flex-col">
-            <div class="text-9xl mb-4 animate__animated animate__tada">🎁</div>
-            <h2 class="text-2xl font-bold text-slate-700">祝你中獎！</h2>
-            <p class="text-gray-500 mt-2">請看大螢幕開獎</p>
+            <div class="text-8xl mb-4 animate__animated animate__tada">🎁</div>
+            <p class="text-xl font-bold text-slate-700">請看大螢幕！</p>
+            <p class="text-gray-500 mt-2">祝你好運</p>
         </div>
-
     </div>
 
 </div>
 
 <script>
-    const { createApp, ref, onMounted, watch } = Vue;
+    const { createApp, ref, computed } = Vue;
 
     createApp({
         setup() {
-            const view = ref('home'); // home, admin, client
-            const mode = ref('left_right'); // left_right, ordering, lottery
-            const lastClientAction = ref(null);
-            const currentTarget = ref(null); // Admin 指定的正確答案
+            const view = ref('home');
+            const mode = ref('left_right');
+            const myId = ref(''); // Admin ID
+            const targetId = ref(''); // Student input ID
+            const connectionCount = ref(0);
             
-            // 點餐資料 (您可以自由修改這裡)
-            const menuItems = ref([
+            // 互動資料
+            const lastAction = ref(null);
+            const currentMenu = ref(null);
+            const menuItems = [
                 { id: 1, name: '糖果', emoji: '🍬', pronunciation: 'Alufu' },
                 { id: 2, name: '飛鼠', emoji: '🐿️', pronunciation: 'Paga' },
                 { id: 3, name: '山豬', emoji: '🐗', pronunciation: 'Babo' },
-                { id: 4, name: '謝謝', emoji: '🙏', pronunciation: 'Aray' },
-            ]);
-            const currentMenuItem = ref(null);
-
+                { id: 4, name: '謝謝', emoji: '🙏', pronunciation: 'Aray' }
+            ];
+            
             // 抽獎
             const isRolling = ref(false);
-            const lotteryResult = ref('');
-            const prizes = ['頭獎', '二獎', '糖果一顆', '再來一次', '銘謝惠顧'];
+            const lotteryResult = ref('準備開始');
+            const prizes = ['頭獎', '二獎', '再玩一次', '參加獎', '恭喜過關'];
 
-            // --- 核心：使用 localStorage 模擬 Socket ---
-            const CHANNEL = 'mother-lang-game-data';
+            // PeerJS 物件
+            let peer = null;
+            let conn = null; // Admin保存多個連線太複雜，這裡簡化為廣播
+            let connections = []; // Admin端儲存所有學生連線
 
-            // 監聽資料變更 (接收端)
-            window.addEventListener('storage', (event) => {
-                if (event.key === CHANNEL) {
-                    const data = JSON.parse(event.newValue);
-                    if (!data) return;
-
-                    // 如果我是 Client，同步 Admin 的模式
-                    if (view.value === 'client') {
-                        if (data.type === 'MODE_CHANGE') {
-                            mode.value = data.payload;
-                            // 重置狀態
-                            currentMenuItem.value = null;
-                        }
-                        if (data.type === 'MENU_SHOW') {
-                            currentMenuItem.value = data.payload;
-                        }
-                    }
-
-                    // 如果我是 Admin，接收 Client 的動作
-                    if (view.value === 'admin') {
-                        if (data.type === 'CLIENT_ACTION') {
-                            lastClientAction.value = data.payload;
-                            // 播放音效 (可選)
-                            // playSound();
-                            
-                            // 3秒後自動清除顯示
-                            setTimeout(() => {
-                                if (lastClientAction.value === data.payload) lastClientAction.value = null;
-                            }, 3000);
-                        }
-                    }
-                }
+            const modeTitles = {
+                'left_right': '🚩 左右護法',
+                'ordering': '🍔 點餐大考驗',
+                'lottery': '🎁 幸運抽獎'
+            };
+            
+            // 網址分享 (讓QR Code更方便)
+            const shareUrl = computed(() => {
+                const url = window.location.href.split('?')[0];
+                return `${url}?id=${myId.value}`; // 您可以稍後再優化這裡的自動帶入
             });
 
-            // 發送資料 (發送端)
-            const sendData = (type, payload) => {
-                const message = { type, payload, timestamp: new Date().getTime() };
-                localStorage.setItem(CHANNEL, JSON.stringify(message));
+            // --- Admin: 初始化 ---
+            const initAdmin = () => {
+                // 產生一個隨機 ID (4位數，方便輸入)
+                const randomId = Math.floor(1000 + Math.random() * 9000);
+                myId.value = 'teacher-' + randomId;
                 
-                // 本地也要同步反應
-                if (type === 'MODE_CHANGE') mode.value = payload;
-                if (type === 'MENU_SHOW') currentMenuItem.value = payload;
+                peer = new Peer(myId.value);
+                
+                peer.on('open', (id) => {
+                    view.value = 'admin';
+                });
+
+                peer.on('connection', (c) => {
+                    connections.push(c);
+                    connectionCount.value++;
+                    
+                    // 1. 學生一連上來，馬上告訴他現在是什麼模式
+                    setTimeout(() => {
+                        c.send({ type: 'MODE', payload: mode.value });
+                    }, 500);
+
+                    // 2. 監聽學生傳來的資料
+                    c.on('data', (data) => {
+                        handleData(data);
+                    });
+                    
+                    c.on('close', () => {
+                        connectionCount.value--;
+                    });
+                });
             };
 
-            // --- Admin 功能 ---
-            const enterRole = (role) => {
-                view.value = role;
-                // 如果是 Admin 進來，初始化模式廣播
-                if (role === 'admin') {
-                    sendData('MODE_CHANGE', mode.value);
+            // --- Client: 連線 ---
+            const connectToAdmin = () => {
+                if(!targetId.value) return;
+                // 修正使用者可能只輸入數字的情況
+                let fullId = targetId.value;
+                if(!fullId.includes('teacher-')) fullId = 'teacher-' + fullId;
+
+                peer = new Peer(); // Client ID 自動生成即可
+                
+                peer.on('open', () => {
+                    conn = peer.connect(fullId);
+                    
+                    conn.on('open', () => {
+                        view.value = 'client';
+                        // 連線成功提示
+                    });
+
+                    conn.on('data', (data) => {
+                        if(data.type === 'MODE') {
+                            mode.value = data.payload;
+                            // 切換模式時重置顯示
+                            currentMenu.value = null;
+                        }
+                    });
+                    
+                    conn.on('error', (err) => alert('連線失敗，請檢查ID'));
+                });
+            };
+
+            // --- 共用: 資料處理 ---
+            const handleData = (data) => {
+                if(data.type === 'ACTION') {
+                    lastAction.value = data.payload;
+                    // 3秒後消失
+                    setTimeout(() => { 
+                        if(lastAction.value === data.payload) lastAction.value = null; 
+                    }, 3000);
+                }
+                if(data.type === 'MENU') {
+                    currentMenu.value = data.payload;
                 }
             };
 
-            const setMode = (newMode) => {
-                mode.value = newMode;
-                sendData('MODE_CHANGE', newMode);
+            // --- Admin 操作 ---
+            const setMode = (m) => {
+                mode.value = m;
+                // 廣播給所有連線的學生
+                connections.forEach(c => c.send({ type: 'MODE', payload: m }));
                 // 重置
-                lastClientAction.value = null;
-                currentMenuItem.value = null;
-                currentTarget.value = null;
+                lastAction.value = null;
+                currentMenu.value = null;
             };
 
-            const adminTrigger = (direction) => {
-                currentTarget.value = direction;
-                // 這裡可以播放 Admin 端的音效
-            };
-
-            const showMenu = (item) => {
-                currentMenuItem.value = item;
-                sendData('MENU_SHOW', item);
-            };
-
-            const startLottery = () => {
+            const runLottery = () => {
                 isRolling.value = true;
-                lotteryResult.value = '...';
-                
                 let count = 0;
-                const interval = setInterval(() => {
+                const timer = setInterval(() => {
                     lotteryResult.value = prizes[Math.floor(Math.random() * prizes.length)];
                     count++;
-                    if (count > 20) {
-                        clearInterval(interval);
+                    if(count > 20) {
+                        clearInterval(timer);
                         isRolling.value = false;
                         lotteryResult.value = prizes[Math.floor(Math.random() * prizes.length)];
                     }
                 }, 100);
             };
 
-            const resetGame = () => {
-                lastClientAction.value = null;
-                currentTarget.value = null;
-                currentMenuItem.value = null;
-                sendData('MODE_CHANGE', mode.value); // 強制同步
+            // --- Client 操作 ---
+            const sendAction = (dir) => {
+                if(conn) conn.send({ type: 'ACTION', payload: dir });
             };
-
-            // --- Client 功能 ---
-            const clientAction = (action) => {
-                // 發送動作給 Admin
-                sendData('CLIENT_ACTION', action);
-                
-                // 手機震動回饋 (如果支援)
-                if (navigator.vibrate) navigator.vibrate(50);
+            const sendMenu = (item) => {
+                if(conn) conn.send({ type: 'MENU', payload: item });
             };
 
             return {
-                view, mode, enterRole,
-                // Admin Data
-                lastClientAction, currentTarget, menuItems, currentMenuItem, 
-                setMode, adminTrigger, showMenu, 
-                // Lottery
-                isRolling, lotteryResult, startLottery, resetGame,
-                // Client Data
-                clientAction
+                view, mode, myId, targetId, connectionCount, shareUrl,
+                initAdmin, connectToAdmin,
+                modeTitles, lastAction, currentMenu, menuItems,
+                setMode, runLottery, isRolling, lotteryResult,
+                sendAction, sendMenu
             };
         }
     }).mount('#app');
