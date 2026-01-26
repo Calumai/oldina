@@ -3,659 +3,310 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>老阿姨東西放哪裡</title>
-    <!-- 載入 Tailwind CSS -->
+    <title>2/21 世界母語日 - 攤位互動主控台</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- 設定 Inter 字體 -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f4f7f9;
-        }
-        /* 確保下拉選單在行動裝置上可讀 */
-        select:required:invalid {
-            color: #6b7280; /* Placeholder text color */
-        }
-        option[value=""][disabled] {
-            display: none;
-        }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0fdf4; }
+        .btn-push { transition: all 0.1s; box-shadow: 0 4px 0 #b91c1c; }
+        .btn-push:active { transform: translateY(4px); box-shadow: 0 0 0 #b91c1c; }
+        .flag-btn { height: 150px; border-radius: 20px; font-size: 2rem; font-weight: bold; transition: transform 0.2s; }
+        .flag-btn:active { transform: scale(0.95); }
     </style>
 </head>
-<body class="min-h-screen">
-    <div id="app" class="max-w-4xl mx-auto p-4 sm:p-6 lg:p-8">
-        <!-- 標題區域 -->
-        <header class="text-center mb-8">
-            <h1 class="text-4xl font-extrabold text-blue-600 tracking-tight mb-2">
-                老阿姨東西放哪裡
-            </h1>
-            <p class="text-gray-500 text-lg">
-                智慧追蹤，從此不再健忘！
-            </p>
-            <!-- 用戶ID顯示，方便協作/測試 -->
-            <div id="user-id-display" class="text-xs text-gray-400 mt-2 truncate">
-                <!-- 更改為直接顯示「正在連線中...」 -->
-                正在連線中...
-            </div>
-        </header>
+<body class="h-screen overflow-hidden text-slate-800">
 
-        <!-- 新增物品區塊 -->
-        <div class="bg-white p-6 rounded-xl shadow-lg mb-8">
-            <h2 class="text-2xl font-semibold text-gray-800 mb-4">新增物品與位置</h2>
-            <form id="addItemForm" class="space-y-4">
-                <div class="flex flex-col sm:flex-row gap-4">
-                    <!-- 物品名稱輸入 (下拉選單, 新增) -->
-                    <select id="itemName" required
-                           class="flex-1 p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition duration-150">
-                        <option value="" disabled selected>— 請選擇物品名稱 (必填) —</option>
-                    </select>
-                    
-                    <!-- 容器/儲存空間 (下拉選單) -->
-                    <select id="itemContainer"
-                            class="flex-1 p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition duration-150">
-                        <option value="" disabled selected>— 請選擇容器/儲存空間 (可選) —</option>
-                    </select>
-                </div>
-                
-                <!-- 物品位置輸入 (大位置) (下拉選單) -->
-                <select id="itemLocation" required
-                        class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition duration-150">
-                    <option value="" disabled selected>— 請選擇大致位置 (必填) —</option>
-                </select>
+<div id="app" class="h-full flex flex-col">
 
-                <!-- 圖片連結輸入 (保持填寫) -->
-                <input type="url" id="itemImageUrl" placeholder="圖片連結 (可選，e.g., https://.../key.jpg)"
-                       class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition duration-150">
-
-                <!-- 新增按鈕 -->
-                <button type="submit" id="addButton"
-                        class="w-full sm:w-auto px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition duration-200 transform hover:scale-[1.01] shadow-md disabled:opacity-50"
-                        disabled>
-                    + 儲存物品
-                </button>
-            </form>
-        </div>
-
-        <!-- 物品搜尋與清單區塊 -->
-        <div class="bg-white p-6 rounded-xl shadow-lg">
-            <h2 class="text-2xl font-semibold text-gray-800 mb-4">我的物品清單</h2>
-            
-            <!-- 搜尋輸入框 -->
-            <input type="text" id="searchItem" placeholder="🔍 搜尋物品名稱、容器或位置..."
-                   class="w-full p-3 mb-6 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500 transition duration-150">
-
-            <!-- 物品列表 -->
-            <div id="itemsList" class="space-y-4">
-                <!-- 載入狀態文字已更改為「讀取中...」 -->
-                <p id="loadingMessage" class="text-center text-gray-500">讀取中...</p>
-                <!-- 物品卡片將會在這裡動態插入 -->
-            </div>
-            
-            <p id="noItemsMessage" class="text-center text-gray-500 hidden mt-4">
-                清單是空的！新增第一個物品吧。
-            </p>
+    <div v-if="view === 'home'" class="flex-1 flex flex-col items-center justify-center space-y-8 bg-gradient-to-br from-green-400 to-blue-500 text-white">
+        <h1 class="text-5xl font-black mb-4 animate__animated animate__bounceIn">攤位互動主控台</h1>
+        <p class="text-xl opacity-90">2/21 世界母語日專用</p>
+        <div class="flex space-x-8 mt-8">
+            <button @click="enterRole('admin')" class="bg-white text-blue-600 px-8 py-6 rounded-2xl shadow-xl text-2xl font-bold hover:scale-105 transition transform">
+                👨‍🏫 我是關主<br><span class="text-sm font-normal text-gray-500">(電腦/大螢幕端)</span>
+            </button>
+            <button @click="enterRole('client')" class="bg-white text-green-600 px-8 py-6 rounded-2xl shadow-xl text-2xl font-bold hover:scale-105 transition transform">
+                🙋‍♂️ 我是學生<br><span class="text-sm font-normal text-gray-500">(手機/平板端)</span>
+            </button>
         </div>
     </div>
 
-    <!-- Firebase 腳本 -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, addDoc, deleteDoc, collection, query, onSnapshot, serverTimestamp, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        // =========================================================================
-        // 1. Firebase 初始化與設定
-        // =========================================================================
-        
-        // 全域變數 (由 Canvas 環境提供)
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-
-        // 初始化 Firebase 服務
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const auth = getAuth(app);
-        // 移除 setLogLevel('debug'); 以減少初始化開銷
-
-        let userId = null;
-        let isAuthReady = false;
-        const addButton = document.getElementById('addButton');
-        const itemsList = document.getElementById('itemsList');
-        const loadingMessage = document.getElementById('loadingMessage');
-        const noItemsMessage = document.getElementById('noItemsMessage');
-        const searchInput = document.getElementById('searchItem');
-        
-        // 取得 Select 元素
-        const itemNameSelect = document.getElementById('itemName'); // 物品名稱 Select
-        const itemLocationSelect = document.getElementById('itemLocation');
-        const itemContainerSelect = document.getElementById('itemContainer');
-        
-        let currentItemsData = []; // 用於儲存最新資料，以便進行搜尋篩選
-
-        // 預設選項列表
-        const commonItems = [
-            "鑰匙", "錢包", "手機充電器", "筆記型電腦", "遙控器", "眼鏡", "護照", "重要文件", "備用電池", "外接硬碟", "工具", "藥品"
-        ];
-        
-        const commonLocations = [
-            "客廳", "臥室", "書房", "廚房", "儲藏室", "車庫", "陽台", "玄關", "浴室", "辦公室"
-        ];
-
-        const commonContainers = [
-            "抽屜", "架子", "紙箱", "文件夾", "背包", "硬碟盒", "保險箱", "工具箱", "衣櫃", "床底下", "桌上"
-        ];
-
-        /**
-         * 填充下拉選單選項
-         * @param {HTMLElement} selectElement - 要填充的 <select> 元素
-         * @param {Array<string>} optionsArray - 選項字串陣列
-         */
-        function populateSelect(selectElement, optionsArray) {
-            optionsArray.forEach(optionText => {
-                const option = document.createElement('option');
-                option.value = optionText;
-                option.textContent = optionText;
-                selectElement.appendChild(option);
-            });
-        }
-        
-        // 填充下拉選單
-        populateSelect(itemNameSelect, commonItems); // 填充物品名稱
-        populateSelect(itemLocationSelect, commonLocations);
-        populateSelect(itemContainerSelect, commonContainers);
-
-
-        // =========================================================================
-        // 2. 身份驗證邏輯
-        // =========================================================================
-
-        async function authenticate() {
-            // 立即更新狀態，讓使用者知道 App 正在嘗試連線
-            // 狀態文字已更新
-            document.getElementById('user-id-display').textContent = '正在連線中...'; 
-            try {
-                if (initialAuthToken) {
-                    await signInWithCustomToken(auth, initialAuthToken);
-                } else {
-                    await signInAnonymously(auth);
-                }
-            } catch (error) {
-                console.error("Firebase 身份驗證失敗:", error);
-                // 即使失敗，也要設置 isAuthReady 以便繼續執行 UI 邏輯
-                isAuthReady = true;
-                addButton.disabled = false;
-                document.getElementById('user-id-display').textContent = '連線失敗，功能受限 (請檢查主控台)。';
-            }
-        }
-
-        onAuthStateChanged(auth, (user) => {
-            isAuthReady = true;
-            addButton.disabled = false;
-
-            if (user) {
-                userId = user.uid;
-                document.getElementById('user-id-display').textContent = `使用者ID: ${userId}`;
-                setupRealtimeListener(userId);
-            } else {
-                // 如果未登入（不應該發生，因為我們嘗試了匿名登入），則使用隨機 ID
-                userId = crypto.randomUUID(); 
-                document.getElementById('user-id-display').textContent = `未驗證 - 臨時ID: ${userId}`;
-            }
-        });
-
-        // 啟動身份驗證流程
-        authenticate();
-
-        // =========================================================================
-        // 3. Firestore 操作
-        // =========================================================================
-
-        /**
-         * 取得物品集合的參考路徑 (私有路徑)
-         * @param {string} currentUserId - 當前用戶ID
-         * @returns {import("firebase/firestore").CollectionReference}
-         */
-        function getItemsCollectionRef(currentUserId) {
-            // 私有路徑: /artifacts/{appId}/users/{userId}/items
-            return collection(db, 'artifacts', appId, 'users', currentUserId, 'items');
-        }
-
-        /**
-         * 新增物品
-         * @param {string} name - 物品名稱
-         * @param {string} location - 物品大致位置
-         * @param {string} container - 物品容器/儲存空間
-         * @param {string} [imageUrl] - 圖片連結 (可選)
-         */
-        async function addItem(name, location, container, imageUrl) {
-            if (!userId) {
-                console.error("無法新增物品：用戶ID尚未設定。");
-                return;
-            }
-
-            try {
-                await addDoc(getItemsCollectionRef(userId), {
-                    name: name.trim(),
-                    location: location.trim(),
-                    container: container.trim() || null, // 儲存容器欄位
-                    imageUrl: imageUrl.trim() || null, 
-                    createdAt: serverTimestamp(),
-                });
-                console.log("物品新增成功:", name);
-            } catch (e) {
-                console.error("新增物品時出錯:", e);
-            }
-        }
-
-        /**
-         * 刪除物品
-         * @param {string} itemId - 物品的 Doc ID
-         */
-        async function deleteItem(itemId) {
-            if (!userId) {
-                console.error("無法刪除物品：用戶ID尚未設定。");
-                return;
-            }
+    <div v-if="view === 'admin'" class="h-full flex">
+        <div class="w-1/4 bg-slate-800 text-white p-6 flex flex-col space-y-6">
+            <h2 class="text-2xl font-bold text-yellow-400">🎮 控制中心</h2>
             
-            try {
-                // 必須提供完整的路徑
-                const itemRef = doc(getItemsCollectionRef(userId), itemId);
-                await deleteDoc(itemRef);
-                console.log("物品刪除成功:", itemId);
-            } catch (e) {
-                console.error("刪除物品時出錯:", e);
-            }
-        }
-        
-        // =========================================================================
-        // 3.5. Gemini TTS 語音朗讀功能 (Text-to-Speech)
-        // =========================================================================
+            <div class="space-y-4">
+                <p class="text-gray-400 text-sm font-bold uppercase">選擇遊戲模式</p>
+                <button @click="setMode('left_right')" :class="{'bg-blue-600': mode === 'left_right', 'bg-slate-700': mode !== 'left_right'}" class="w-full text-left px-4 py-3 rounded-lg hover:bg-blue-500 transition">
+                    🚩 左右護法 (聽音辨位)
+                </button>
+                <button @click="setMode('ordering')" :class="{'bg-green-600': mode === 'ordering', 'bg-slate-700': mode !== 'ordering'}" class="w-full text-left px-4 py-3 rounded-lg hover:bg-green-500 transition">
+                    🍔 點餐大考驗 (看圖說話)
+                </button>
+                <button @click="setMode('lottery')" :class="{'bg-purple-600': mode === 'lottery', 'bg-slate-700': mode !== 'lottery'}" class="w-full text-left px-4 py-3 rounded-lg hover:bg-purple-500 transition">
+                    🎁 幸運大抽獎
+                </button>
+            </div>
 
-        /**
-         * 將 Base64 字串轉換為 ArrayBuffer
-         * @param {string} base64 - Base64 字串
-         * @returns {ArrayBuffer}
-         */
-        function base64ToArrayBuffer(base64) {
-            const binaryString = atob(base64);
-            const len = binaryString.length;
-            const bytes = new Uint8Array(len);
-            for (let i = 0; i < len; i++) {
-                bytes[i] = binaryString.charCodeAt(i);
-            }
-            return bytes.buffer;
-        }
+            <div class="mt-auto border-t border-slate-600 pt-4">
+                <p class="text-gray-400 text-sm">即時狀態</p>
+                <div class="flex items-center mt-2">
+                    <span class="w-3 h-3 bg-green-500 rounded-full mr-2 animate-pulse"></span>
+                    <span>學生端連線中...</span>
+                </div>
+                <button @click="resetGame" class="mt-4 w-full bg-red-600 py-2 rounded text-sm hover:bg-red-700">重置所有狀態</button>
+            </div>
+        </div>
 
-        /**
-         * 將字串寫入 DataView
-         * @param {DataView} view - DataView 物件
-         * @param {number} offset - 寫入起始偏移量
-         * @param {string} string - 要寫入的字串
-         */
-        function writeString(view, offset, string) {
-            for (let i = 0; i < string.length; i++) {
-                view.setUint8(offset + i, string.charCodeAt(i));
-            }
-        }
-
-        /**
-         * 將 PCM 16-bit 音訊數據轉換為 WAV Blob
-         * @param {Int16Array} pcm16 - 16位元的 PCM 音訊數據
-         * @param {number} sampleRate - 取樣率
-         * @returns {Blob} - WAV 格式的 Blob
-         */
-        function pcmToWav(pcm16, sampleRate) {
-            const numChannels = 1;
-            const bytesPerSample = 2; // 16-bit PCM
-
-            const buffer = new ArrayBuffer(44 + pcm16.byteLength);
-            const view = new DataView(buffer);
-
-            // RIFF chunk descriptor
-            writeString(view, 0, 'RIFF'); // ChunkID
-            view.setUint32(4, 36 + pcm16.byteLength, true); // ChunkSize
-            writeString(view, 8, 'WAVE'); // Format
-
-            // FMT sub-chunk
-            writeString(view, 12, 'fmt '); // Subchunk1ID
-            view.setUint32(16, 16, true); // Subchunk1Size (16 for PCM)
-            view.setUint16(20, 1, true); // AudioFormat (1 for PCM)
-            view.setUint16(22, numChannels, true); // NumChannels
-            view.setUint32(24, sampleRate, true); // SampleRate
-            view.setUint32(28, sampleRate * numChannels * bytesPerSample, true); // ByteRate
-            view.setUint16(32, numChannels * bytesPerSample, true); // BlockAlign
-            view.setUint16(34, 16, true); // BitsPerSample
-
-            // Data sub-chunk
-            writeString(view, 36, 'data'); // Subchunk2ID
-            view.setUint32(40, pcm16.byteLength, true); // Subchunk2Size
-
-            // Write PCM data
-            let offset = 44;
-            for (let i = 0; i < pcm16.length; i++) {
-                view.setInt16(offset, pcm16[i], true);
-                offset += 2;
-            }
-
-            return new Blob([view], { type: 'audio/wav' });
-        }
-        
-        /**
-         * 播放 WAV Blob 格式的音訊
-         * @param {Blob} wavBlob - WAV 格式的 Blob
-         */
-        function playAudioFromWavBlob(wavBlob) {
-            const audioUrl = URL.createObjectURL(wavBlob);
-            const audio = new Audio(audioUrl);
-            audio.play();
-            // 釋放 URL 物件
-            audio.onended = () => {
-                URL.revokeObjectURL(audioUrl);
-            };
-        }
-
-        /**
-         * 呼叫 Gemini TTS API 產生音訊
-         * @param {string} prompt - 要轉換為語音的文字
-         * @param {string} voiceName - 語音名稱 (e.g., 'Kore')
-         * @param {string} itemId - 物品 ID (用於鎖定/解鎖按鈕)
-         */
-        async function fetchTtsAudio(prompt, voiceName, itemId) {
-            const speakButton = document.querySelector(`.speak-btn[data-id="${itemId}"]`);
-            if (speakButton) {
-                speakButton.disabled = true;
-                speakButton.textContent = '🔊 讀取中...'; // TTS 載入中文字更新
-            }
-
-            const apiKey = "";
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`;
-
-            const payload = {
-                contents: [{ parts: [{ text: prompt }] }],
-                generationConfig: {
-                    responseModalities: ["AUDIO"],
-                    speechConfig: {
-                        voiceConfig: { prebuiltVoiceConfig: { voiceName: voiceName } }
-                    }
-                },
-                model: "gemini-2.5-flash-preview-tts"
-            };
-
-            let response;
-            let retries = 0;
-            const maxRetries = 5;
-            let delay = 1000;
-
-            while (retries < maxRetries) {
-                try {
-                    response = await fetch(apiUrl, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                    });
-
-                    if (response.ok) {
-                        break; // 成功，跳出迴圈
-                    } else if (response.status === 429 || response.status >= 500) {
-                        // 處理限速或伺服器錯誤 (重試)
-                        retries++;
-                        await new Promise(resolve => setTimeout(resolve, delay));
-                        delay *= 2; // 指數退讓
-                        console.warn(`TTS API 請求失敗，狀態碼: ${response.status}。正在重試 ${retries}/${maxRetries}...`);
-                    } else {
-                        // 處理其他錯誤
-                        throw new Error(`TTS API 請求失敗，狀態碼: ${response.status}`);
-                    }
-                } catch (error) {
-                    console.error("TTS API 呼叫期間發生錯誤:", error);
-                    break;
-                }
-            }
+        <div class="w-3/4 bg-gray-100 flex flex-col items-center justify-center relative p-8">
             
-            if (speakButton) {
-                speakButton.disabled = false;
-                speakButton.textContent = '🔊 告訴我位置';
-            }
-
-            if (!response || !response.ok) {
-                console.error("TTS 請求最終失敗或無法解析回應。");
-                return;
-            }
-
-            try {
-                const result = await response.json();
-                const part = result?.candidates?.[0]?.content?.parts?.[0];
-                const audioData = part?.inlineData?.data;
-                const mimeType = part?.inlineData?.mimeType;
-
-                if (audioData && mimeType && mimeType.startsWith("audio/")) {
-                    // MimeType 範例: audio/L16; rate=24000
-                    const rateMatch = mimeType.match(/rate=(\d+)/);
-                    const sampleRate = rateMatch ? parseInt(rateMatch[1], 10) : 24000; // 預設 24000
-                    
-                    const pcmData = base64ToArrayBuffer(audioData);
-                    const pcm16 = new Int16Array(pcmData);
-                    
-                    const wavBlob = pcmToWav(pcm16, sampleRate);
-                    playAudioFromWavBlob(wavBlob);
-
-                } else {
-                    console.error("TTS API 回應中缺少音訊資料或格式錯誤。");
-                }
-            } catch (error) {
-                console.error("處理 TTS 回應時發生錯誤:", error);
-            }
-        }
-
-        /**
-         * 準備文字並呼叫 TTS 朗讀物品位置
-         * @param {Object} item - 物品物件
-         */
-        function speakItemLocation(item) {
-            const containerText = item.container ? `，容器：${item.container}` : '';
-            const prompt = `請用友善且清楚的中文語氣唸出：物品：${item.name} ${containerText}，大致位置：${item.location}。`;
-            // 使用 Kore 語音 (聲音較為清晰明確)
-            fetchTtsAudio(prompt, 'Kore', item.id); 
-        }
-
-        // =========================================================================
-        // 4. 即時監聽與 UI 更新
-        // =========================================================================
-
-        /**
-         * 設置 Firestore 即時監聽器
-         * @param {string} currentUserId - 當前用戶ID
-         */
-        function setupRealtimeListener(currentUserId) {
-            if (!currentUserId || !isAuthReady) {
-                return; // 等待驗證完成
-            }
-            
-            const itemsQuery = query(getItemsCollectionRef(currentUserId));
-            
-            onSnapshot(itemsQuery, (snapshot) => {
-                const items = [];
-                snapshot.forEach((doc) => {
-                    // 將 document ID 和資料合併
-                    items.push({ id: doc.id, ...doc.data() });
-                });
+            <div v-if="mode === 'left_right'" class="text-center w-full">
+                <h3 class="text-3xl font-bold mb-8 text-slate-600">左右護法：你聽到了哪個詞？</h3>
                 
-                // 依創建時間降冪排序，新物品在前面
-                items.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
-
-                currentItemsData = items; // 更新全域資料
-                renderItems(currentItemsData); // 渲染所有資料
-                
-                loadingMessage.classList.add('hidden');
-                noItemsMessage.classList.toggle('hidden', items.length > 0);
-
-                console.log("資料已更新:", items.length, "筆記錄");
-
-            }, (error) => {
-                console.error("監聽 Firestore 時發生錯誤:", error);
-                // 失敗訊息已更新
-                loadingMessage.textContent = '讀取資料失敗。';
-            });
-        }
-
-        /**
-         * 渲染物品列表到 DOM
-         * @param {Array<Object>} itemsToRender - 要渲染的物品列表
-         */
-        function renderItems(itemsToRender) {
-            itemsList.innerHTML = ''; // 清空現有列表
-
-            if (itemsToRender.length === 0) {
-                itemsList.innerHTML = '<p class="text-center text-gray-500 p-4">沒有符合條件的物品。</p>';
-                return;
-            }
-
-            itemsToRender.forEach(item => {
-                // 檢查是否有有效的圖片連結
-                const imageUrl = item.imageUrl && item.imageUrl.trim() ? item.imageUrl : null;
-                const imageHtml = imageUrl ? 
-                    // 使用 onerror 處理圖片載入失敗，顯示預留圖
-                    `<img src="${imageUrl}" alt="${item.name || '物品圖片'}" 
-                          class="w-16 h-16 object-cover rounded-lg mr-4 border border-gray-200 flex-shrink-0 cursor-pointer" 
-                          onclick="window.open('${imageUrl}', '_blank')"
-                          onerror="this.onerror=null; this.src='https://placehold.co/64x64/E0E7FF/3B82F6?text=No+Img';">` 
-                    : '<div class="w-16 h-16 bg-gray-200 rounded-lg mr-4 flex-shrink-0 flex items-center justify-center text-gray-500 text-xs text-center p-1 leading-tight">無圖</div>';
-                
-                // 顯示容器/位置資訊
-                const locationDisplay = item.container && item.container.trim()
-                    ? `<span class="font-semibold text-purple-600">${item.container}</span> 在 ${item.location || '無大致位置'}` 
-                    : item.location || '無位置資訊';
-
-                const itemDiv = document.createElement('div');
-                itemDiv.className = 'flex items-start justify-between bg-gray-50 p-4 rounded-xl shadow-sm transition duration-150 hover:shadow-md border border-gray-100';
-                itemDiv.innerHTML = `
-                    ${imageHtml}
-                    <div class="flex-1 min-w-0 pt-1">
-                        <p class="text-xl font-bold text-gray-900 truncate">${item.name || '無名稱'}</p>
-                        <p class="text-sm text-gray-600 mt-1 flex items-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-purple-500 mr-2 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" />
-                            </svg>
-                            <span class="truncate">${locationDisplay}</span>
-                        </p>
-                        <button data-id="${item.id}" class="speak-btn mt-3 px-3 py-1 bg-purple-500 text-white text-xs font-medium rounded-full hover:bg-purple-600 transition duration-150 disabled:opacity-50 flex items-center justify-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
-                            </svg>
-                            <span>告訴我位置</span>
-                        </button>
-                    </div>
-                    <button data-id="${item.id}" class="delete-btn flex-shrink-0 ml-4 p-2 text-red-500 hover:text-white hover:bg-red-600 rounded-full transition duration-150" title="刪除">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 10-2 0v6a1 1 0 102 0V8z" clip-rule="evenodd" />
-                        </svg>
+                <div class="flex justify-center space-x-8 mb-12">
+                     <button @click="adminTrigger('left')" class="bg-red-500 text-white w-48 h-48 rounded-3xl text-4xl font-bold shadow-lg hover:bg-red-600 transition transform hover:scale-105 flex flex-col items-center justify-center">
+                        <span>🔴 左</span>
+                        <span class="text-lg mt-2 font-normal opacity-80">(Kawiri)</span>
                     </button>
-                `;
-                itemsList.appendChild(itemDiv);
-            });
-            
-            // 重新綁定事件
-            document.querySelectorAll('.delete-btn').forEach(button => {
-                button.addEventListener('click', (e) => {
-                    const itemId = e.currentTarget.getAttribute('data-id');
-                    // 找到對應的 item
-                    const itemToDelete = itemsToRender.find(i => i.id === itemId);
-                    if (itemToDelete && confirmModal(`確定要刪除 "${itemToDelete.name}" 嗎？`)) {
-                        deleteItem(itemId);
-                    }
-                });
-            });
+                    <button @click="adminTrigger('right')" class="bg-white text-slate-800 border-4 border-slate-200 w-48 h-48 rounded-3xl text-4xl font-bold shadow-lg hover:bg-gray-50 transition transform hover:scale-105 flex flex-col items-center justify-center">
+                        <span>⚪ 右</span>
+                        <span class="text-lg mt-2 font-normal opacity-80">(Kawanan)</span>
+                    </button>
+                </div>
 
-            // 綁定 TTS 按鈕事件
-            document.querySelectorAll('.speak-btn').forEach(button => {
-                button.addEventListener('click', (e) => {
-                    const itemId = e.currentTarget.getAttribute('data-id');
-                    const itemToSpeak = currentItemsData.find(i => i.id === itemId);
-                    if (itemToSpeak) {
-                        speakItemLocation(itemToSpeak);
-                    }
-                });
-            });
-        }
-        
-        /**
-         * 即時搜尋/篩選功能
-         */
-        searchInput.addEventListener('input', (e) => {
-            const searchTerm = e.target.value.toLowerCase().trim();
-            
-            if (!searchTerm) {
-                renderItems(currentItemsData); // 顯示所有項目
-                noItemsMessage.classList.toggle('hidden', currentItemsData.length > 0);
-                return;
-            }
+                <div class="bg-white p-6 rounded-xl shadow-inner w-full max-w-2xl h-32 flex items-center justify-center space-x-4">
+                    <p v-if="!lastClientAction" class="text-gray-400">等待學生舉旗...</p>
+                    <div v-else class="animate__animated animate__tada flex flex-col items-center">
+                        <span class="text-6xl">{{ lastClientAction === 'left' ? '🔴' : '⚪' }}</span>
+                        <span class="text-xl font-bold mt-2 text-slate-700">學生舉了{{ lastClientAction === 'left' ? '紅旗' : '白旗' }}！</span>
+                        <span v-if="lastClientAction === currentTarget" class="text-green-600 font-black text-2xl mt-1">✅ 答對了！</span>
+                        <span v-else-if="currentTarget" class="text-red-500 font-black text-2xl mt-1">❌ 哎呀！</span>
+                    </div>
+                </div>
+            </div>
 
-            const filteredItems = currentItemsData.filter(item => 
-                (item.name && item.name.toLowerCase().includes(searchTerm)) ||
-                (item.location && item.location.toLowerCase().includes(searchTerm)) ||
-                (item.container && item.container.toLowerCase().includes(searchTerm))
-            );
-            
-            renderItems(filteredItems); // 顯示篩選結果
-            noItemsMessage.classList.add('hidden'); // 篩選時不顯示 "清單是空的" 訊息
-        });
-
-
-        // =========================================================================
-        // 5. 事件監聽器 (表單提交)
-        // =========================================================================
-        
-        document.getElementById('addItemForm').addEventListener('submit', (e) => {
-            e.preventDefault();
-            
-            // 從 Select 元素取得值
-            const nameSelect = document.getElementById('itemName');
-            const locationSelect = document.getElementById('itemLocation');
-            const containerSelect = document.getElementById('itemContainer'); 
-            const imageUrlInput = document.getElementById('itemImageUrl');
-
-            const name = nameSelect.value;
-            const location = locationSelect.value;
-            const container = containerSelect.value; 
-            const imageUrl = imageUrlInput.value; 
-
-            // 檢查必填欄位 (name 和 location)
-            if (name && location) {
-                addItem(name, location, container, imageUrl);
+            <div v-if="mode === 'ordering'" class="text-center w-full h-full flex flex-col items-center justify-center">
+                <div v-if="!currentMenuItem" class="text-gray-400 text-2xl">請選擇一道菜上架...</div>
                 
-                // 清空表單
-                nameSelect.value = ''; // 重設為預設值
-                locationSelect.value = ''; 
-                containerSelect.value = ''; 
-                imageUrlInput.value = ''; 
-                nameSelect.focus();
-            } else if (!name) {
-                // 如果 name 沒選
-                alert('請選擇物品名稱 (必填欄位)。');
-                nameSelect.focus();
-            } else if (!location) {
-                // 如果 location 沒選
-                alert('請選擇大致位置 (必填欄位)。');
-                locationSelect.focus();
-            }
-        });
+                <div v-else class="bg-white p-8 rounded-3xl shadow-2xl animate__animated animate__zoomIn max-w-md w-full">
+                    <div class="text-9xl mb-6">{{ currentMenuItem.emoji }}</div>
+                    <div class="text-4xl font-black text-slate-800 mb-2">{{ currentMenuItem.name }}</div>
+                    <div class="text-2xl text-blue-600 font-mono bg-blue-50 py-2 px-4 rounded-lg inline-block">{{ currentMenuItem.pronunciation }}</div>
+                </div>
 
-        // =========================================================================
-        // 6. UI 輔助功能 (自定義模態框替代 alert/confirm)
-        // =========================================================================
+                <div class="mt-12 grid grid-cols-4 gap-4 w-full max-w-3xl">
+                    <button v-for="item in menuItems" :key="item.id" @click="showMenu(item)" class="bg-white p-4 rounded-xl shadow hover:shadow-lg transition flex flex-col items-center">
+                        <span class="text-4xl">{{ item.emoji }}</span>
+                        <span class="font-bold mt-2">{{ item.name }}</span>
+                    </button>
+                </div>
+            </div>
 
-        /**
-         * 簡易自定義確認模態框 (替代 window.confirm)
-         * @param {string} message - 顯示給用戶的訊息
-         * @returns {boolean} - 如果用戶輸入 '確定' 則返回 true
-         */
-        function confirmModal(message) {
-            // 在 Canvas 環境中，我們不能用 alert/confirm，所以用 prompt 模擬。
-            const result = prompt(`${message}\n\n (請輸入 '確定' 以刪除, 或取消)`);
-            return result === '確定';
+            <div v-if="mode === 'lottery'" class="text-center">
+                <h3 class="text-4xl font-black text-purple-600 mb-8">🎁 幸運大抽獎</h3>
+                <div class="bg-white w-96 h-64 flex items-center justify-center rounded-3xl shadow-2xl border-8 border-purple-200 mb-8 overflow-hidden relative">
+                    <div v-if="isRolling" class="text-8xl animate-spin">🎡</div>
+                    <div v-else class="text-6xl font-bold text-slate-800 animate__animated animate__rubberBand">{{ lotteryResult || '準備開始' }}</div>
+                </div>
+                <button @click="startLottery" :disabled="isRolling" class="bg-purple-600 text-white px-12 py-4 rounded-full text-2xl font-bold shadow-lg hover:bg-purple-700 disabled:opacity-50 btn-push">
+                    {{ isRolling ? '抽獎中...' : '開始抽獎' }}
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <div v-if="view === 'client'" class="h-full bg-slate-100 p-4 flex flex-col">
+        
+        <div class="bg-white p-4 rounded-2xl shadow-sm mb-4 flex justify-between items-center">
+            <div>
+                <span class="text-xs text-gray-500 block">現在模式</span>
+                <span class="font-bold text-lg text-blue-600">
+                    {{ mode === 'left_right' ? '🚩 左右護法' : (mode === 'ordering' ? '🍔 點餐中' : '🎁 抽獎時刻') }}
+                </span>
+            </div>
+            <div class="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+        </div>
+
+        <div v-if="mode === 'left_right'" class="flex-1 flex flex-col space-y-4 justify-center">
+            <button @touchstart="clientAction('left')" @click="clientAction('left')" class="flag-btn bg-red-500 text-white shadow-lg flex flex-col items-center justify-center btn-push">
+                <span>🔴</span>
+                <span>左邊 / 是</span>
+            </button>
+            <button @touchstart="clientAction('right')" @click="clientAction('right')" class="flag-btn bg-white text-slate-800 border-4 border-slate-200 shadow-lg flex flex-col items-center justify-center btn-push">
+                <span>⚪</span>
+                <span>右邊 / 否</span>
+            </button>
+        </div>
+
+        <div v-if="mode === 'ordering'" class="flex-1 flex flex-col items-center justify-center">
+            <div v-if="currentMenuItem" class="bg-white p-8 rounded-3xl shadow-xl text-center w-full animate__animated animate__fadeInUp">
+                <div class="text-8xl mb-4">{{ currentMenuItem.emoji }}</div>
+                <p class="text-gray-500 mb-2">請大聲唸出：</p>
+                <div class="text-3xl font-black text-blue-600 border-2 border-dashed border-blue-200 p-4 rounded-xl">
+                    {{ currentMenuItem.pronunciation }}
+                </div>
+            </div>
+            <div v-else class="text-gray-400 text-center">
+                <div class="text-6xl mb-4">👀</div>
+                <p>看著老闆的大螢幕...</p>
+            </div>
+        </div>
+
+        <div v-if="mode === 'lottery'" class="flex-1 flex items-center justify-center flex-col">
+            <div class="text-9xl mb-4 animate__animated animate__tada">🎁</div>
+            <h2 class="text-2xl font-bold text-slate-700">祝你中獎！</h2>
+            <p class="text-gray-500 mt-2">請看大螢幕開獎</p>
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+    const { createApp, ref, onMounted, watch } = Vue;
+
+    createApp({
+        setup() {
+            const view = ref('home'); // home, admin, client
+            const mode = ref('left_right'); // left_right, ordering, lottery
+            const lastClientAction = ref(null);
+            const currentTarget = ref(null); // Admin 指定的正確答案
+            
+            // 點餐資料 (您可以自由修改這裡)
+            const menuItems = ref([
+                { id: 1, name: '糖果', emoji: '🍬', pronunciation: 'Alufu' },
+                { id: 2, name: '飛鼠', emoji: '🐿️', pronunciation: 'Paga' },
+                { id: 3, name: '山豬', emoji: '🐗', pronunciation: 'Babo' },
+                { id: 4, name: '謝謝', emoji: '🙏', pronunciation: 'Aray' },
+            ]);
+            const currentMenuItem = ref(null);
+
+            // 抽獎
+            const isRolling = ref(false);
+            const lotteryResult = ref('');
+            const prizes = ['頭獎', '二獎', '糖果一顆', '再來一次', '銘謝惠顧'];
+
+            // --- 核心：使用 localStorage 模擬 Socket ---
+            const CHANNEL = 'mother-lang-game-data';
+
+            // 監聽資料變更 (接收端)
+            window.addEventListener('storage', (event) => {
+                if (event.key === CHANNEL) {
+                    const data = JSON.parse(event.newValue);
+                    if (!data) return;
+
+                    // 如果我是 Client，同步 Admin 的模式
+                    if (view.value === 'client') {
+                        if (data.type === 'MODE_CHANGE') {
+                            mode.value = data.payload;
+                            // 重置狀態
+                            currentMenuItem.value = null;
+                        }
+                        if (data.type === 'MENU_SHOW') {
+                            currentMenuItem.value = data.payload;
+                        }
+                    }
+
+                    // 如果我是 Admin，接收 Client 的動作
+                    if (view.value === 'admin') {
+                        if (data.type === 'CLIENT_ACTION') {
+                            lastClientAction.value = data.payload;
+                            // 播放音效 (可選)
+                            // playSound();
+                            
+                            // 3秒後自動清除顯示
+                            setTimeout(() => {
+                                if (lastClientAction.value === data.payload) lastClientAction.value = null;
+                            }, 3000);
+                        }
+                    }
+                }
+            });
+
+            // 發送資料 (發送端)
+            const sendData = (type, payload) => {
+                const message = { type, payload, timestamp: new Date().getTime() };
+                localStorage.setItem(CHANNEL, JSON.stringify(message));
+                
+                // 本地也要同步反應
+                if (type === 'MODE_CHANGE') mode.value = payload;
+                if (type === 'MENU_SHOW') currentMenuItem.value = payload;
+            };
+
+            // --- Admin 功能 ---
+            const enterRole = (role) => {
+                view.value = role;
+                // 如果是 Admin 進來，初始化模式廣播
+                if (role === 'admin') {
+                    sendData('MODE_CHANGE', mode.value);
+                }
+            };
+
+            const setMode = (newMode) => {
+                mode.value = newMode;
+                sendData('MODE_CHANGE', newMode);
+                // 重置
+                lastClientAction.value = null;
+                currentMenuItem.value = null;
+                currentTarget.value = null;
+            };
+
+            const adminTrigger = (direction) => {
+                currentTarget.value = direction;
+                // 這裡可以播放 Admin 端的音效
+            };
+
+            const showMenu = (item) => {
+                currentMenuItem.value = item;
+                sendData('MENU_SHOW', item);
+            };
+
+            const startLottery = () => {
+                isRolling.value = true;
+                lotteryResult.value = '...';
+                
+                let count = 0;
+                const interval = setInterval(() => {
+                    lotteryResult.value = prizes[Math.floor(Math.random() * prizes.length)];
+                    count++;
+                    if (count > 20) {
+                        clearInterval(interval);
+                        isRolling.value = false;
+                        lotteryResult.value = prizes[Math.floor(Math.random() * prizes.length)];
+                    }
+                }, 100);
+            };
+
+            const resetGame = () => {
+                lastClientAction.value = null;
+                currentTarget.value = null;
+                currentMenuItem.value = null;
+                sendData('MODE_CHANGE', mode.value); // 強制同步
+            };
+
+            // --- Client 功能 ---
+            const clientAction = (action) => {
+                // 發送動作給 Admin
+                sendData('CLIENT_ACTION', action);
+                
+                // 手機震動回饋 (如果支援)
+                if (navigator.vibrate) navigator.vibrate(50);
+            };
+
+            return {
+                view, mode, enterRole,
+                // Admin Data
+                lastClientAction, currentTarget, menuItems, currentMenuItem, 
+                setMode, adminTrigger, showMenu, 
+                // Lottery
+                isRolling, lotteryResult, startLottery, resetGame,
+                // Client Data
+                clientAction
+            };
         }
-
-    </script>
+    }).mount('#app');
+</script>
 </body>
 </html>
