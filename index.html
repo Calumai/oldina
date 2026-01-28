@@ -2,150 +2,274 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>2/21 母語日 - 雲端連線版</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>本土語 AI 賦能工作坊 - 提示詞大挑戰</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    <!-- 引入 PeerJS 用於跨裝置連線 -->
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0fdf4; touch-action: manipulation; }
-        .btn-push { transition: all 0.1s; box-shadow: 0 6px 0 #b91c1c; }
-        .btn-push:active { transform: translateY(6px); box-shadow: 0 0 0 #b91c1c; }
-        .flag-btn { height: 160px; border-radius: 20px; font-size: 2rem; font-weight: bold; transition: transform 0.1s; }
-        .flag-btn:active { transform: scale(0.95); }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #0f172a; color: #e2e8f0; touch-action: manipulation; }
+        .glass-panel { background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); }
+        .neon-text { text-shadow: 0 0 10px rgba(59, 130, 246, 0.5); }
+        /* 隱藏未編譯的 Vue 模板 */
         [v-cloak] { display: none; }
+        
+        /* 自定義捲軸 - 縮小寬度 */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #1e293b; }
+        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
     </style>
 </head>
-<body class="h-screen overflow-hidden text-slate-800">
+<body class="h-screen overflow-hidden text-sm md:text-base">
 
 <div id="app" v-cloak class="h-full flex flex-col">
 
-    <div v-if="view === 'home'" class="flex-1 flex flex-col items-center justify-center space-y-8 bg-gradient-to-br from-green-400 to-blue-500 text-white p-4 text-center">
-        <h1 class="text-4xl md:text-5xl font-black mb-2 animate__animated animate__bounceIn">母語日互動主控台</h1>
-        <p class="text-lg opacity-90">雲端連線版 (PeerJS)</p>
+    <!-- 1. 首頁：身分選擇 -->
+    <div v-if="view === 'home'" class="flex-1 flex flex-col items-center justify-center space-y-6 bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-4 text-center relative overflow-hidden">
+        <!-- 背景裝飾 -->
+        <div class="absolute top-0 left-0 w-full h-full opacity-20 pointer-events-none">
+            <div class="absolute top-10 left-10 w-32 h-32 bg-blue-500 rounded-full blur-3xl"></div>
+            <div class="absolute bottom-10 right-10 w-64 h-64 bg-purple-500 rounded-full blur-3xl"></div>
+        </div>
+
+        <h1 class="text-3xl md:text-5xl font-black mb-2 animate__animated animate__fadeInDown neon-text text-white">
+            本土語 AI 賦能工作坊
+        </h1>
+        <p class="text-lg text-blue-300 font-mono tracking-widest">PROMPT ENGINEERING CHALLENGE</p>
         
-        <div class="flex flex-col md:flex-row gap-6 mt-8 w-full max-w-2xl px-4">
-            <button @click="initAdmin" class="flex-1 bg-white text-blue-600 py-8 rounded-2xl shadow-xl text-2xl font-bold hover:scale-105 transition transform flex flex-col items-center justify-center">
-                <span>👨‍🏫 我是關主 (老師)</span>
-                <span class="text-sm font-normal text-gray-500 mt-2">建立房間，顯示在大螢幕</span>
+        <div class="flex flex-col md:flex-row gap-4 mt-8 w-full max-w-xl px-4 z-10">
+            <button @click="initAdmin" class="flex-1 glass-panel text-blue-300 py-6 rounded-2xl hover:bg-white/10 transition transform hover:scale-105 flex flex-col items-center border border-blue-500/30 cursor-pointer">
+                <span class="text-4xl mb-2">👨‍💻</span>
+                <span class="text-xl font-bold mb-1">講師端 (Host)</span>
+                <span class="text-xs opacity-60">建立互動房間</span>
             </button>
-            <button @click="view = 'scan'" class="flex-1 bg-white text-green-600 py-8 rounded-2xl shadow-xl text-2xl font-bold hover:scale-105 transition transform flex flex-col items-center justify-center">
-                <span>🙋‍♂️ 我是學生 (手機)</span>
-                <span class="text-sm font-normal text-gray-500 mt-2">掃碼或輸入ID連線</span>
+            <button @click="view = 'scan'" class="flex-1 glass-panel text-purple-300 py-6 rounded-2xl hover:bg-white/10 transition transform hover:scale-105 flex flex-col items-center border border-purple-500/30 cursor-pointer">
+                <span class="text-4xl mb-2">📱</span>
+                <span class="text-xl font-bold mb-1">學員端 (Join)</span>
+                <span class="text-xs opacity-60">輸入 ID 連線</span>
             </button>
         </div>
     </div>
 
-    <div v-if="view === 'scan'" class="flex-1 flex flex-col items-center justify-center bg-slate-100 p-6">
-        <div class="bg-white p-8 rounded-3xl shadow-xl w-full max-w-md text-center">
-            <h2 class="text-2xl font-bold mb-6 text-slate-700">輸入老師的房間 ID</h2>
-            <input v-model="targetId" type="text" placeholder="例如: happy-123" class="w-full text-center text-3xl font-mono border-2 border-gray-300 rounded-xl py-4 mb-6 uppercase focus:border-green-500 outline-none">
-            <button @click="connectToAdmin" :disabled="!targetId" class="w-full bg-green-600 text-white py-4 rounded-xl text-xl font-bold hover:bg-green-700 disabled:opacity-50">
-                🚀 連線！
+    <!-- 2. 學員連線頁面 -->
+    <div v-if="view === 'scan'" class="flex-1 flex flex-col items-center justify-center bg-slate-900 p-6">
+        <div class="glass-panel p-6 rounded-2xl w-full max-w-sm text-center border-t border-purple-500/50">
+            <h2 class="text-xl font-bold mb-4 text-white">輸入講師提供的 ID</h2>
+            <input v-model="targetId" type="tel" maxlength="4" placeholder="例如: 1234" class="w-full text-center text-4xl font-mono bg-slate-800 border-2 border-slate-600 rounded-xl py-4 mb-6 text-white focus:border-purple-500 outline-none uppercase tracking-widest transition-colors">
+            <button @click="connectToAdmin" :disabled="!targetId" class="w-full bg-purple-600 text-white py-3 rounded-xl text-lg font-bold hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition shadow-lg shadow-purple-900/50">
+                🚀 進入挑戰
             </button>
-            <button @click="view = 'home'" class="mt-4 text-gray-500 underline">返回首頁</button>
+            <button @click="view = 'home'" class="mt-4 text-gray-500 hover:text-white transition underline text-sm">返回首頁</button>
         </div>
     </div>
 
-    <div v-if="view === 'admin'" class="h-full flex flex-col md:flex-row">
-        <div class="w-full md:w-1/4 bg-slate-800 text-white p-4 flex flex-col space-y-4">
-            <div class="bg-slate-700 p-3 rounded-lg text-center">
-                <p class="text-xs text-gray-400 mb-1">房間 ID (請學生輸入):</p>
-                <div class="text-2xl font-mono font-bold text-yellow-400 tracking-wider">{{ myId }}</div>
+    <!-- 3. 講師控制台 (Admin) -->
+    <div v-if="view === 'admin'" class="h-full flex flex-col md:flex-row bg-slate-900">
+        <!-- 左側控制面板 (縮小寬度) -->
+        <div class="w-full md:w-64 bg-slate-800/80 border-r border-slate-700 p-3 flex flex-col space-y-3 shadow-xl z-20">
+            <div class="bg-blue-900/30 border border-blue-500/30 p-2 rounded-xl text-center">
+                <p class="text-[10px] text-blue-300 mb-1 tracking-wider uppercase">Room ID</p>
+                <div class="text-3xl md:text-4xl font-mono font-bold text-white tracking-widest">{{ displayId }}</div>
             </div>
             
-            <div class="flex-1 space-y-3 overflow-y-auto">
-                <p class="text-gray-400 text-xs font-bold uppercase">切換模式</p>
-                <button @click="setMode('left_right')" :class="mode === 'left_right' ? 'bg-blue-600' : 'bg-slate-700'" class="w-full text-left px-4 py-3 rounded-lg transition">🚩 左右護法</button>
-                <button @click="setMode('ordering')" :class="mode === 'ordering' ? 'bg-green-600' : 'bg-slate-700'" class="w-full text-left px-4 py-3 rounded-lg transition">🍔 點餐大考驗</button>
-                <button @click="setMode('lottery')" :class="mode === 'lottery' ? 'bg-purple-600' : 'bg-slate-700'" class="w-full text-left px-4 py-3 rounded-lg transition">🎁 幸運抽獎</button>
+            <div class="flex-1 space-y-2 overflow-y-auto mt-2 pr-1">
+                <p class="text-gray-400 text-[10px] font-bold uppercase tracking-wider pl-2">挑戰模式</p>
+                
+                <button @click="setMode('quiz')" :class="mode === 'quiz' ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/50 ring-1 ring-blue-400' : 'bg-slate-700 text-gray-300 hover:bg-slate-600'" class="w-full text-left px-3 py-3 rounded-lg transition flex items-center">
+                    <span class="text-xl mr-2">⚖️</span>
+                    <div>
+                        <div class="font-bold text-sm">提示詞二選一</div>
+                        <div class="text-[10px] opacity-70">A/B Testing</div>
+                    </div>
+                </button>
+
+                <button @click="setMode('tool')" :class="mode === 'tool' ? 'bg-purple-600 text-white shadow-lg shadow-purple-900/50 ring-1 ring-purple-400' : 'bg-slate-700 text-gray-300 hover:bg-slate-600'" class="w-full text-left px-3 py-3 rounded-lg transition flex items-center">
+                    <span class="text-xl mr-2">🧰</span>
+                    <div>
+                        <div class="font-bold text-sm">AI 工具箱</div>
+                        <div class="text-[10px] opacity-70">情境判斷題</div>
+                    </div>
+                </button>
+
+                <button @click="setMode('lottery')" :class="mode === 'lottery' ? 'bg-yellow-600 text-white shadow-lg shadow-yellow-900/50 ring-1 ring-yellow-400' : 'bg-slate-700 text-gray-300 hover:bg-slate-600'" class="w-full text-left px-3 py-3 rounded-lg transition flex items-center">
+                    <span class="text-xl mr-2">🎁</span>
+                    <div>
+                        <div class="font-bold text-sm">幸運抽獎</div>
+                        <div class="text-[10px] opacity-70">結業大禮包</div>
+                    </div>
+                </button>
             </div>
 
-            <div class="pt-2 border-t border-slate-600">
-                <div class="flex items-center text-sm">
-                    <span class="w-2 h-2 rounded-full mr-2" :class="connectionCount > 0 ? 'bg-green-500 animate-pulse' : 'bg-red-500'"></span>
-                    <span>已連線裝置: {{ connectionCount }}</span>
+            <div class="pt-2 border-t border-slate-700">
+                <div class="flex items-center justify-between text-xs bg-black/20 p-2 rounded-lg">
+                    <div class="flex items-center">
+                        <span class="w-2 h-2 rounded-full mr-2" :class="connectionCount > 0 ? 'bg-green-500 animate-pulse' : 'bg-red-500'"></span>
+                        <span class="text-gray-300">學員數</span>
+                    </div>
+                    <span class="font-mono text-lg font-bold text-white">{{ connectionCount }}</span>
                 </div>
             </div>
         </div>
 
-        <div class="flex-1 bg-gray-100 flex flex-col items-center justify-center p-4 relative overflow-hidden">
+        <!-- 右側大螢幕展示區 -->
+        <div class="flex-1 bg-gradient-to-br from-slate-900 to-black flex flex-col items-center justify-center p-4 relative overflow-hidden">
             
-            <div v-if="connectionCount === 0" class="absolute inset-0 bg-black/80 z-50 flex flex-col items-center justify-center text-white p-8 text-center backdrop-blur-sm">
-                <h3 class="text-3xl font-bold mb-4">等待學生連線...</h3>
-                <div class="bg-white p-4 rounded-xl mb-4">
-                    <img :src="`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(shareUrl)}`" alt="QR Code" class="w-48 h-48">
+            <!-- 等待連線 QR Code -->
+            <div v-if="connectionCount === 0" class="absolute inset-0 bg-black/90 z-50 flex flex-col items-center justify-center text-white p-6 text-center backdrop-blur-md">
+                <h3 class="text-2xl md:text-3xl font-bold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">等待學員連線...</h3>
+                <div class="bg-white p-3 rounded-xl mb-4 shadow-xl shadow-blue-500/20">
+                    <img :src="`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(shareUrl)}`" alt="QR Code" class="w-40 h-40">
                 </div>
-                <p class="text-xl">請掃描 或 輸入 ID: <span class="text-yellow-400 font-mono font-bold">{{ myId }}</span></p>
-                <button @click="connectionCount = 1" class="mt-8 text-sm text-gray-400 underline">跳過等待 (測試用)</button>
+                <div class="text-xl">
+                    請輸入 ID: <span class="text-yellow-400 font-mono font-bold text-4xl ml-2">{{ displayId }}</span>
+                </div>
+                <button @click="connectionCount = 1" class="mt-8 text-xs text-gray-500 hover:text-gray-300 transition underline">跳過等待 (僅供預覽測試)</button>
             </div>
 
-            <div v-if="mode === 'left_right'" class="text-center w-full max-w-4xl">
-                <h3 class="text-2xl md:text-4xl font-bold mb-8 text-slate-700">左右護法：聽音辨位</h3>
-                <div class="flex justify-center gap-6 mb-12">
-                    <div class="w-32 h-32 md:w-48 md:h-48 bg-red-500 text-white rounded-3xl flex items-center justify-center text-4xl shadow-lg">左</div>
-                    <div class="w-32 h-32 md:w-48 md:h-48 bg-white border-4 border-slate-200 text-slate-800 rounded-3xl flex items-center justify-center text-4xl shadow-lg">右</div>
+            <!-- 模式 A: 提示詞二選一 (Quiz) - 縮小版面 -->
+            <div v-if="mode === 'quiz'" class="text-center w-full max-w-5xl animate__animated animate__fadeIn flex flex-col h-full justify-center">
+                <div class="mb-4">
+                    <span class="bg-blue-900/50 text-blue-300 px-4 py-1 rounded-full text-xs font-bold border border-blue-500/30 uppercase tracking-widest">Prompt Duel</span>
                 </div>
-                <div v-if="lastAction" class="bg-white p-6 rounded-2xl shadow-xl inline-block animate__animated animate__tada">
-                    <span class="text-6xl block mb-2">{{ lastAction === 'left' ? '🔴' : '⚪' }}</span>
-                    <span class="text-xl font-bold text-slate-600">學生舉了{{ lastAction === 'left' ? '紅旗' : '白旗' }}!</span>
+                <h3 class="text-2xl md:text-4xl font-bold mb-8 text-white leading-tight">
+                    哪一個提示詞 (Prompt) 效果更好？
+                </h3>
+                
+                <div class="flex flex-col md:flex-row justify-center gap-4 mb-8 w-full px-2 flex-1 max-h-[400px]">
+                    <!-- 選項 A -->
+                    <div class="flex-1 bg-gradient-to-br from-blue-600 to-blue-800 p-0.5 rounded-2xl shadow-xl shadow-blue-900/50 transform transition hover:scale-[1.02]">
+                        <div class="h-full bg-slate-900 rounded-[14px] p-4 flex flex-col items-center justify-center relative overflow-hidden">
+                            <span class="absolute text-[8rem] font-black text-blue-500/10 -top-6 -left-2 select-none">A</span>
+                            <div class="relative z-10">
+                                <span class="text-5xl font-black text-blue-500 mb-2 block">A</span>
+                                <p class="text-lg text-blue-200 font-bold leading-tight">精確、具體<br>有範例</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- VS -->
+                    <div class="flex items-center justify-center py-2 md:py-0">
+                        <span class="text-3xl font-black text-white italic opacity-30">VS</span>
+                    </div>
+
+                    <!-- 選項 B -->
+                    <div class="flex-1 bg-gradient-to-br from-pink-600 to-pink-800 p-0.5 rounded-2xl shadow-xl shadow-pink-900/50 transform transition hover:scale-[1.02]">
+                        <div class="h-full bg-slate-900 rounded-[14px] p-4 flex flex-col items-center justify-center relative overflow-hidden">
+                            <span class="absolute text-[8rem] font-black text-pink-500/10 -top-6 -right-2 select-none">B</span>
+                             <div class="relative z-10">
+                                <span class="text-5xl font-black text-pink-500 mb-2 block">B</span>
+                                <p class="text-lg text-pink-200 font-bold leading-tight">模糊、簡短<br>無上下文</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div v-else class="text-gray-400 text-xl animate-pulse">等待學生舉旗...</div>
+
+                <!-- 顯示學員選擇結果 -->
+                <div v-if="lastAction" class="h-16 flex items-center justify-center animate__animated animate__zoomIn">
+                    <div class="bg-slate-800/90 backdrop-blur-md border border-white/20 px-6 py-3 rounded-full flex items-center gap-4 shadow-xl">
+                        <span class="text-gray-400 font-bold text-sm">最新回答：</span>
+                        <span class="text-3xl font-black" :class="lastAction === 'A' ? 'text-blue-400' : 'text-pink-400'">
+                            {{ lastAction === 'A' ? '選項 A' : '選項 B' }}
+                        </span>
+                    </div>
+                </div>
+                <div v-else class="h-16"></div>
             </div>
 
-            <div v-if="mode === 'ordering'" class="text-center w-full h-full flex flex-col items-center justify-center">
-                <div v-if="currentMenu" class="bg-white p-8 rounded-3xl shadow-2xl animate__animated animate__zoomIn max-w-md w-full">
-                    <div class="text-9xl mb-6">{{ currentMenu.emoji }}</div>
-                    <div class="text-4xl font-black text-slate-800 mb-2">{{ currentMenu.name }}</div>
-                    <div class="text-3xl text-blue-600 font-mono bg-blue-50 py-2 rounded-lg">{{ currentMenu.pronunciation }}</div>
+            <!-- 模式 B: AI 工具箱 - 縮小版面 -->
+            <div v-if="mode === 'tool'" class="text-center w-full h-full flex flex-col items-center justify-center max-w-3xl animate__animated animate__fadeIn">
+                <div class="mb-6">
+                    <span class="bg-purple-900/50 text-purple-300 px-4 py-1 rounded-full text-xs font-bold border border-purple-500/30 uppercase tracking-widest">AI Toolkit</span>
                 </div>
-                <div v-else class="text-gray-400 text-2xl">👇 請在手機點選餐點</div>
+                
+                <div v-if="currentTool" class="glass-panel p-8 rounded-[2rem] shadow-2xl animate__animated animate__backInUp w-full border-t-4" :class="currentTool.color">
+                    <div class="text-7xl mb-4 filter drop-shadow-lg">{{ currentTool.emoji }}</div>
+                    <div class="text-4xl font-black text-white mb-4">{{ currentTool.name }}</div>
+                    <p class="text-lg text-gray-300 leading-relaxed max-w-xl mx-auto bg-black/20 p-3 rounded-xl">{{ currentTool.desc }}</p>
+                    <div class="mt-6 py-2 px-6 bg-white/10 rounded-full inline-block text-xs font-mono text-gray-400 tracking-wider">
+                        學員選擇了這個功能
+                    </div>
+                </div>
+                
+                <div v-else class="text-center animate-pulse opacity-50">
+                    <div class="text-7xl mb-4">🤖</div>
+                    <p class="text-2xl text-gray-400 font-light">請聆聽題目，選擇正確的 AI 功能...</p>
+                </div>
             </div>
 
-            <div v-if="mode === 'lottery'" class="text-center">
-                <h3 class="text-4xl font-black text-purple-600 mb-8">幸運大抽獎</h3>
-                <div class="bg-white w-80 h-64 md:w-96 flex items-center justify-center rounded-3xl shadow-2xl border-8 border-purple-200 mb-8">
-                    <div class="text-5xl font-bold text-slate-800">{{ lotteryResult }}</div>
+            <!-- 模式 C: 幸運抽獎 - 縮小版面 -->
+            <div v-if="mode === 'lottery'" class="text-center animate__animated animate__fadeIn flex flex-col justify-center h-full">
+                <h3 class="text-3xl md:text-4xl font-black text-yellow-400 mb-8 animate__animated animate__pulse animate__infinite" style="text-shadow: 0 0 20px rgba(250, 204, 21, 0.6);">🎉 工作坊幸運星 🎉</h3>
+                
+                <div class="bg-slate-800 w-64 h-48 md:w-96 md:h-64 flex items-center justify-center rounded-[2rem] shadow-2xl border-4 border-yellow-500/30 mb-8 relative overflow-hidden group mx-auto">
+                    <!-- 光效 -->
+                    <div class="absolute inset-0 bg-yellow-500/5 animate-pulse"></div>
+                    <div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-30"></div>
+                    
+                    <div class="text-3xl md:text-5xl font-bold text-white relative z-10 font-mono text-center px-4 leading-tight">
+                        {{ lotteryResult }}
+                    </div>
                 </div>
-                <button @click="runLottery" :disabled="isRolling" class="bg-purple-600 text-white px-10 py-4 rounded-full text-2xl font-bold shadow-lg hover:bg-purple-700 disabled:opacity-50">
-                    {{ isRolling ? '轉動中...' : '開始抽獎' }}
+                
+                <div>
+                    <button @click="runLottery" :disabled="isRolling" class="bg-gradient-to-r from-yellow-600 to-orange-600 text-white px-10 py-4 rounded-full text-xl md:text-2xl font-bold shadow-lg shadow-yellow-900/50 hover:scale-105 hover:shadow-yellow-600/50 transition-all transform disabled:opacity-50 disabled:scale-100 disabled:cursor-not-allowed">
+                        {{ isRolling ? '抽出幸運兒...' : '開始抽獎' }}
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- 4. 學員介面 (Client - Mobile) -->
+    <div v-if="view === 'client'" class="h-full bg-slate-900 p-3 flex flex-col">
+        <!-- 頂部狀態列 -->
+        <div class="glass-panel p-3 rounded-xl mb-4 flex justify-between items-center sticky top-0 z-50 bg-slate-900/90 backdrop-blur">
+            <div>
+                <span class="text-[10px] text-gray-400 block uppercase tracking-wider mb-0.5">Current Task</span>
+                <span class="font-bold text-white text-base">
+                    {{ modeTitles[mode] }}
+                </span>
+            </div>
+            <div class="flex items-center bg-green-900/30 px-2 py-1 rounded-full border border-green-500/30">
+                <span class="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse mr-1.5"></span>
+                <span class="text-[10px] text-green-400 font-mono">ONLINE</span>
+            </div>
+        </div>
+
+        <!-- Client A: 提示詞二選一 -->
+        <div v-if="mode === 'quiz'" class="flex-1 flex flex-col gap-4 justify-center pb-4 max-w-sm mx-auto w-full">
+            <button @click="sendAction('A')" class="flex-1 bg-gradient-to-br from-blue-600 to-blue-800 rounded-2xl shadow-lg border-b-4 border-blue-900 active:border-b-0 active:translate-y-1 active:shadow-none transition-all flex flex-col items-center justify-center group relative overflow-hidden min-h-[120px]">
+                 <div class="absolute inset-0 bg-blue-400/10 opacity-0 group-hover:opacity-100 transition"></div>
+                <span class="text-6xl font-black text-white group-hover:scale-110 transition drop-shadow-lg">A</span>
+                <span class="text-blue-200 mt-1 font-bold text-sm">這個比較好</span>
+            </button>
+            <button @click="sendAction('B')" class="flex-1 bg-gradient-to-br from-pink-600 to-pink-800 rounded-2xl shadow-lg border-b-4 border-pink-900 active:border-b-0 active:translate-y-1 active:shadow-none transition-all flex flex-col items-center justify-center group relative overflow-hidden min-h-[120px]">
+                <div class="absolute inset-0 bg-pink-400/10 opacity-0 group-hover:opacity-100 transition"></div>
+                <span class="text-6xl font-black text-white group-hover:scale-110 transition drop-shadow-lg">B</span>
+                <span class="text-pink-200 mt-1 font-bold text-sm">這個比較好</span>
+            </button>
+        </div>
+
+        <!-- Client B: AI 工具箱 -->
+        <div v-if="mode === 'tool'" class="flex-1 overflow-y-auto pb-2 max-w-sm mx-auto w-full px-1">
+            <p class="text-center text-gray-400 mb-4 text-xs">請針對講師的情境，選擇對應工具：</p>
+            <div class="grid grid-cols-2 gap-3">
+                <button v-for="tool in tools" :key="tool.id" @click="sendTool(tool)" class="aspect-square bg-slate-800 rounded-xl shadow border border-slate-700 hover:border-purple-500 active:bg-purple-900/50 active:scale-95 transition flex flex-col items-center justify-center p-2 group">
+                    <span class="text-4xl mb-2 group-hover:scale-110 transition">{{ tool.emoji }}</span>
+                    <span class="font-bold text-white text-sm">{{ tool.name }}</span>
                 </button>
             </div>
         </div>
-    </div>
 
-    <div v-if="view === 'client'" class="h-full bg-slate-100 p-4 flex flex-col">
-        <div class="bg-white p-3 rounded-xl shadow-sm mb-4 flex justify-between items-center">
-            <span class="font-bold text-blue-600 text-lg">{{ modeTitles[mode] }}</span>
-            <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">🟢 已連線</span>
-        </div>
-
-        <div v-if="mode === 'left_right'" class="flex-1 flex flex-col gap-4 justify-center pb-8">
-            <button @click="sendAction('left')" class="flag-btn bg-red-500 text-white shadow-lg flex flex-col items-center justify-center btn-push">
-                <span class="text-5xl mb-2">🔴</span>
-                <span>左邊 / 是</span>
-            </button>
-            <button @click="sendAction('right')" class="flag-btn bg-white text-slate-800 border-4 border-slate-200 shadow-lg flex flex-col items-center justify-center btn-push">
-                <span class="text-5xl mb-2">⚪</span>
-                <span>右邊 / 否</span>
-            </button>
-        </div>
-
-        <div v-if="mode === 'ordering'" class="flex-1 overflow-y-auto pb-4">
-            <p class="text-center text-gray-500 mb-4">請點選你想吃的東西：</p>
-            <div class="grid grid-cols-2 gap-4">
-                <button v-for="item in menuItems" :key="item.id" @click="sendMenu(item)" class="bg-white p-4 rounded-xl shadow border-2 border-transparent hover:border-blue-500 active:scale-95 transition flex flex-col items-center h-40 justify-center">
-                    <span class="text-5xl mb-2">{{ item.emoji }}</span>
-                    <span class="font-bold text-lg">{{ item.name }}</span>
-                </button>
-            </div>
-        </div>
-
-        <div v-if="mode === 'lottery'" class="flex-1 flex items-center justify-center flex-col">
-            <div class="text-8xl mb-4 animate__animated animate__tada">🎁</div>
-            <p class="text-xl font-bold text-slate-700">請看大螢幕！</p>
-            <p class="text-gray-500 mt-2">祝你好運</p>
+        <!-- Client C: 抽獎模式 -->
+        <div v-if="mode === 'lottery'" class="flex-1 flex items-center justify-center flex-col text-center">
+            <div class="text-7xl mb-6 animate__animated animate__tada animate__infinite">🎁</div>
+            <h2 class="text-2xl font-bold text-white mb-2">幸運抽獎中</h2>
+            <p class="text-gray-400 text-sm">請注視前方大螢幕</p>
         </div>
     </div>
 
@@ -157,50 +281,54 @@
     createApp({
         setup() {
             const view = ref('home');
-            const mode = ref('left_right');
-            const myId = ref(''); // Admin ID
-            const targetId = ref(''); // Student input ID
+            const mode = ref('quiz'); // quiz, tool, lottery
+            const myId = ref(''); 
+            const displayId = ref(''); // 顯示用的短碼
+            const targetId = ref(''); 
             const connectionCount = ref(0);
             
-            // 互動資料
+            // 資料與狀態
             const lastAction = ref(null);
-            const currentMenu = ref(null);
-            const menuItems = [
-                { id: 1, name: '糖果', emoji: '🍬', pronunciation: 'Alufu' },
-                { id: 2, name: '飛鼠', emoji: '🐿️', pronunciation: 'Paga' },
-                { id: 3, name: '山豬', emoji: '🐗', pronunciation: 'Babo' },
-                { id: 4, name: '謝謝', emoji: '🙏', pronunciation: 'Aray' }
+            const currentTool = ref(null);
+            
+            // 定義 AI 工具按鈕 (已修正為本土語情境)
+            const tools = [
+                { id: 1, name: '撰寫教案', emoji: '📝', desc: 'ChatGPT: 產生 10 分鐘微課程計畫', color: 'border-blue-500' },
+                { id: 2, name: '生成教材圖', emoji: '🎨', desc: 'Midjourney/Bing: 繪製在地傳說場景', color: 'border-pink-500' },
+                { id: 3, name: '模擬對話', emoji: '🗣️', desc: 'ChatGPT: 扮演在地長輩與學生練習', color: 'border-green-500' },
+                { id: 4, name: '自動出題', emoji: '✅', desc: 'ChatGPT: 根據課文產生 5 題選擇題', color: 'border-yellow-500' }
             ];
             
-            // 抽獎
+            // 抽獎內容 (已修正為本土語教材)
             const isRolling = ref(false);
-            const lotteryResult = ref('準備開始');
-            const prizes = ['頭獎', '二獎', '再玩一次', '參加獎', '恭喜過關'];
+            const lotteryResult = ref('READY');
+            const prizes = ['ChatGPT Plus', '本土語教材大禮包', '精美文創筆記本', '星巴克禮券', '講師簽名照', '再來一次'];
 
-            // PeerJS 物件
             let peer = null;
-            let conn = null; // Admin保存多個連線太複雜，這裡簡化為廣播
-            let connections = []; // Admin端儲存所有學生連線
+            let conn = null;
+            let connections = [];
 
             const modeTitles = {
-                'left_right': '🚩 左右護法',
-                'ordering': '🍔 點餐大考驗',
+                'quiz': '⚖️ 提示詞二選一',
+                'tool': '🧰 選擇合適的 AI 工具',
                 'lottery': '🎁 幸運抽獎'
             };
             
-            // 網址分享 (讓QR Code更方便)
             const shareUrl = computed(() => {
                 const url = window.location.href.split('?')[0];
-                return `${url}?id=${myId.value}`; // 您可以稍後再優化這裡的自動帶入
+                return `${url}`; 
             });
 
             // --- Admin: 初始化 ---
             const initAdmin = () => {
-                // 產生一個隨機 ID (4位數，方便輸入)
+                // 產生 4 位數隨機碼作為房間 ID
                 const randomId = Math.floor(1000 + Math.random() * 9000);
-                myId.value = 'teacher-' + randomId;
+                displayId.value = randomId.toString();
+                // 加上前綴避免衝突
+                const fullId = 'AI-Teacher-' + randomId;
                 
-                peer = new Peer(myId.value);
+                myId.value = fullId;
+                peer = new Peer(fullId);
                 
                 peer.on('open', (id) => {
                     view.value = 'admin';
@@ -210,12 +338,11 @@
                     connections.push(c);
                     connectionCount.value++;
                     
-                    // 1. 學生一連上來，馬上告訴他現在是什麼模式
+                    // 連線後廣播當前模式
                     setTimeout(() => {
                         c.send({ type: 'MODE', payload: mode.value });
                     }, 500);
 
-                    // 2. 監聽學生傳來的資料
                     c.on('data', (data) => {
                         handleData(data);
                     });
@@ -229,54 +356,49 @@
             // --- Client: 連線 ---
             const connectToAdmin = () => {
                 if(!targetId.value) return;
-                // 修正使用者可能只輸入數字的情況
-                let fullId = targetId.value;
-                if(!fullId.includes('teacher-')) fullId = 'teacher-' + fullId;
+                let inputId = targetId.value.trim();
+                // 自動補全前綴
+                let fullId = 'AI-Teacher-' + inputId;
 
-                peer = new Peer(); // Client ID 自動生成即可
+                peer = new Peer(); 
                 
                 peer.on('open', () => {
                     conn = peer.connect(fullId);
                     
                     conn.on('open', () => {
                         view.value = 'client';
-                        // 連線成功提示
                     });
 
                     conn.on('data', (data) => {
                         if(data.type === 'MODE') {
                             mode.value = data.payload;
-                            // 切換模式時重置顯示
-                            currentMenu.value = null;
+                            currentTool.value = null; // 切換模式時清空
                         }
                     });
                     
-                    conn.on('error', (err) => alert('連線失敗，請檢查ID'));
+                    conn.on('error', (err) => alert('找不到房間 ID，請重新確認'));
                 });
             };
 
-            // --- 共用: 資料處理 ---
+            // --- 資料處理 ---
             const handleData = (data) => {
                 if(data.type === 'ACTION') {
                     lastAction.value = data.payload;
-                    // 3秒後消失
                     setTimeout(() => { 
                         if(lastAction.value === data.payload) lastAction.value = null; 
                     }, 3000);
                 }
-                if(data.type === 'MENU') {
-                    currentMenu.value = data.payload;
+                if(data.type === 'TOOL') {
+                    currentTool.value = data.payload;
                 }
             };
 
             // --- Admin 操作 ---
             const setMode = (m) => {
                 mode.value = m;
-                // 廣播給所有連線的學生
                 connections.forEach(c => c.send({ type: 'MODE', payload: m }));
-                // 重置
                 lastAction.value = null;
-                currentMenu.value = null;
+                currentTool.value = null;
             };
 
             const runLottery = () => {
@@ -285,28 +407,31 @@
                 const timer = setInterval(() => {
                     lotteryResult.value = prizes[Math.floor(Math.random() * prizes.length)];
                     count++;
-                    if(count > 20) {
+                    if(count > 30) {
                         clearInterval(timer);
                         isRolling.value = false;
                         lotteryResult.value = prizes[Math.floor(Math.random() * prizes.length)];
                     }
-                }, 100);
+                }, 80);
             };
 
             // --- Client 操作 ---
-            const sendAction = (dir) => {
-                if(conn) conn.send({ type: 'ACTION', payload: dir });
+            const sendAction = (choice) => {
+                if(conn) conn.send({ type: 'ACTION', payload: choice });
+                // 震動回饋
+                if (navigator.vibrate) navigator.vibrate(50);
             };
-            const sendMenu = (item) => {
-                if(conn) conn.send({ type: 'MENU', payload: item });
+            const sendTool = (tool) => {
+                if(conn) conn.send({ type: 'TOOL', payload: tool });
+                if (navigator.vibrate) navigator.vibrate(50);
             };
 
             return {
-                view, mode, myId, targetId, connectionCount, shareUrl,
+                view, mode, myId, displayId, targetId, connectionCount, shareUrl,
                 initAdmin, connectToAdmin,
-                modeTitles, lastAction, currentMenu, menuItems,
+                modeTitles, lastAction, currentTool, tools,
                 setMode, runLottery, isRolling, lotteryResult,
-                sendAction, sendMenu
+                sendAction, sendTool
             };
         }
     }).mount('#app');
