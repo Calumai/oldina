@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>本土語 AI 賦能工作坊</title>
+    <title>族語 AI 賦能工作坊</title>
     <!-- 引入 Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- 引入 Vue.js 3 -->
@@ -81,7 +81,7 @@
         <div class="text-center mb-12 animate__animated animate__fadeInUp">
             <span class="inline-block py-1 px-3 rounded-full bg-indigo-100 text-indigo-700 text-xs font-bold tracking-wider mb-4 border border-indigo-200">INTERACTIVE WORKSHOP</span>
             <h1 class="text-4xl md:text-6xl font-black text-slate-800 tracking-tight leading-tight">
-                本土語 AI<br>
+                族語 AI<br>
                 <span class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">賦能工作坊</span>
             </h1>
         </div>
@@ -224,7 +224,7 @@
                         <div class="h-full bg-white border-2 p-6 rounded-3xl shadow-sm transition-all duration-500 relative overflow-hidden flex flex-col" 
                              :class="showStats ? (quizData[currentQIndex].answer === 'A' ? 'border-green-500 bg-green-50 ring-4 ring-green-100' : 'border-slate-100 opacity-60') : 'border-indigo-100 hover:border-indigo-300'">
                             
-                            <div v-if="showStats && quizData[currentQIndex].answer === 'A'" class="absolute top-4 right-4 bg-green-500 text-white text-xs font-bold px-3 py-1 rounded-full animate__animated animate__bounceIn">CORRECT</div>
+                            <div v-if="showStats && quizData[currentQIndex].answer === 'A'" class="absolute top-4 right-4 bg-green-500 text-white text-xs font-bold px-3 py-1 rounded-full animate__animated animate__bounceIn">正解！</div>
 
                             <span class="text-6xl font-black text-indigo-50 mb-4 block select-none">A</span>
                             <div class="relative z-10 flex-1 flex items-center justify-center text-center">
@@ -252,7 +252,7 @@
                         <div class="h-full bg-white border-2 p-6 rounded-3xl shadow-sm transition-all duration-500 relative overflow-hidden flex flex-col"
                              :class="showStats ? (quizData[currentQIndex].answer === 'B' ? 'border-green-500 bg-green-50 ring-4 ring-green-100' : 'border-slate-100 opacity-60') : 'border-purple-100 hover:border-purple-300'">
                             
-                            <div v-if="showStats && quizData[currentQIndex].answer === 'B'" class="absolute top-4 right-4 bg-green-500 text-white text-xs font-bold px-3 py-1 rounded-full animate__animated animate__bounceIn">CORRECT</div>
+                            <div v-if="showStats && quizData[currentQIndex].answer === 'B'" class="absolute top-4 right-4 bg-green-500 text-white text-xs font-bold px-3 py-1 rounded-full animate__animated animate__bounceIn">正解！</div>
 
                             <span class="text-6xl font-black text-purple-50 mb-4 block select-none">B</span>
                             <div class="relative z-10 flex-1 flex items-center justify-center text-center">
@@ -267,7 +267,7 @@
                     <div class="flex items-start gap-4">
                         <div class="text-2xl">💡</div>
                         <div>
-                            <h4 class="font-bold text-yellow-400 mb-1 text-sm uppercase tracking-wide">Analysis</h4>
+                            <h4 class="font-bold text-yellow-400 mb-1 text-sm uppercase tracking-wide">AI 老師小撇步</h4>
                             <p class="text-base md:text-lg leading-relaxed opacity-90">{{ quizData[currentQIndex].analysis }}</p>
                         </div>
                     </div>
@@ -319,7 +319,7 @@
                     <div class="flex items-start gap-4">
                         <div class="text-2xl">💡</div>
                         <div>
-                            <h4 class="font-bold text-yellow-400 mb-1 text-sm uppercase tracking-wide">Analysis</h4>
+                            <h4 class="font-bold text-yellow-400 mb-1 text-sm uppercase tracking-wide">AI 老師小撇步</h4>
                             <p class="text-base md:text-lg leading-relaxed opacity-90">{{ toolData[currentToolQIndex].analysis }}</p>
                         </div>
                     </div>
@@ -372,66 +372,66 @@
 <script>
     const { createApp, ref, reactive, computed, nextTick } = Vue;
 
-    // 1. 提示詞 PK 賽題庫
+    // 1. 提示詞 PK 賽題庫 (族語老師版)
     const quizData = [
         {
-            q: "Q1：關於「客語字顯示」的設定，當你希望網頁上的客語特殊字（如：𠊎、佢、熝）不會變成亂碼，哪一個指令更保險？",
-            options: { A: "「幫我寫一個客語網頁，內容要有客語字。」", B: "「請寫一個客語教學網頁，並確保使用 UTF-8 編碼與 Google Fonts 思源黑體，以正確顯示客語特殊字。」" },
+            q: "Q1：學生老是抱怨「族語羅馬字」好難記，如果想請 AI 幫忙設計一個有趣的記憶口訣或兒歌，哪種講法 AI 比較聽得懂？🤔",
+            options: { A: "「幫我寫一個關於羅馬拼音的歌，要好笑一點。」", B: "「請扮演一位幽默的族語老師，針對『族語羅馬拼音』的 P, T, K 發音規則，創作一首適合國小生朗誦的押韻兒歌，風格要活潑有趣！」" },
             answer: "B",
-            analysis: "解析： 選 (B)。主動要求編碼和字體，是解決「方框亂碼」的關鍵。"
+            analysis: "💡 選 (B) 就對了！給 AI 一個「幽默老師」的人設，加上明確的「教學目標」(P,T,K) 和「對象」(國小生)，它才會吐出真正能用的東西！"
         },
         {
-            q: "Q2：如果你想教學生「身體部位」的客語，哪一個指令能產出更整齊的對照表？",
-            options: { A: "「請幫我列出頭、目珠、鼻公的客語對照表，要有漢字、拼音跟中文。」", B: "「請用 HTML 表格製作客語單詞表，包含漢字、客語拼音（標註腔調）、中文意思，並加上格線美化。」" },
+            q: "Q2：要教「身體部位」的單字了！想做一張圖文並茂的單字表發給學生，怎麼叫 AI 幫我排版最快？📋",
+            options: { A: "「幫我把頭、眼睛、鼻子的族語列出來，弄成表格。」", B: "「請製作一個 HTML 表格，第一欄是『中文』，第二欄是『族語羅馬字』(請留空讓我填)，第三欄是『圖像建議』，請列出頭、眼睛、鼻子等常用部位。」" },
             answer: "B",
-            analysis: "解析： 選 (B)。指定「HTML 表格」與「拼音腔調」，AI 才會幫你排版得像課本一樣漂亮。"
+            analysis: "💡 選 (B)！直接指定「HTML 表格」格式，AI 產出來的可以直接貼到 Word 或 Excel，而且預留欄位讓你填入正確的族語，不怕 AI 亂翻譯！"
         },
         {
-            q: "Q3：你想做一個讓學生「先猜意思、再看答案」的測驗，該怎麼說？",
-            options: { A: "「幫我做一個網頁，按鈕按下去會出現答案。」", B: "「請製作一個互動式卡片網頁。每張卡片顯示客語句型，下方設有一個『點擊看翻譯』的按鈕，點擊後才顯示中文解釋。」" },
+            q: "Q3：想做一個「翻牌配對」的小遊戲網頁，讓學生下課可以玩，該怎麼跟 AI 工程師許願？🎮",
+            options: { A: "「寫一個網頁遊戲，可以翻牌子學族語。」", B: "「請提供一個單一檔案的 HTML/CSS/JS 代碼，製作一個『翻牌記憶遊戲』。卡片正面是『族語單字』，背面是『中文意思』，配對成功要顯示『Lokah!』的鼓勵訊息。」" },
             answer: "B",
-            analysis: "解析： 選 (B)。明確定義「互動行為」與「按鈕功能」，AI 才能寫出正確的 JavaScript 互動代碼。"
+            analysis: "💡 選 (B) 才是專業的！明確說出「單一檔案」、「遊戲規則」和「獎勵機制」(Lokah!)，AI 才能寫出真正能跑的程式碼喔！"
         },
         {
-            q: "Q4：如果你覺得產出的網頁太單調，想讓它更有客家文化特色，該如何下令？",
-            options: { A: "「網頁幫我弄漂亮一點，要有客家感覺。」", B: "「請調整網頁 CSS 樣式，將主題色改為客家藍衫的藍色，背景加入淡淡的油桐花紋理或白色色調。」" },
+            q: "Q4：網頁做好了，但看起來白白的很無聊...想加一點「原住民風味」，怎麼改比較有感？🎨",
+            options: { A: "「把它變漂亮一點，要有原住民的感覺。」", B: "「請修改 CSS 樣式，將背景色改為泰雅族傳統服飾的『紅色與白色』配色，並在標題周圍加入『菱形圖騰』的裝飾元素。」" },
             answer: "B",
-            analysis: "解析： 選 (B)。給予具體的「顏色描述」或「文化符號」，AI 才能抓準你想要的風格。"
+            analysis: "💡 選 (B)！AI 不懂什麼是「感覺」，但它懂「紅色、白色」和「菱形圖騰」！指令越具體，視覺效果越精準！"
         },
         {
-            q: "Q5：當你準備把網頁交給 Netlify 變成網址分享給家長時，哪組指令更專業？",
-            options: { A: "「把代碼寫好，我要給別人看的。」", B: "「請提供完整的 HTML/CSS 單一檔案代碼，並將首頁命名為 index.html，方便我直接上傳到 Netlify 發佈。」" },
+            q: "Q5：最後一步！要把做好的網頁變成網址傳到家長群組，怎麼說最省事？🔗",
+            options: { A: "「代碼給我，我要傳給別人。」", B: "「請確認這是一個完整的 HTML 檔案，不需要額外安裝任何軟體就能在瀏覽器開啟。並教我如何將它上傳到免費空間 (如 GitHub Pages)。」" },
             answer: "B",
-            analysis: "解析： 選 (B)。提到 index.html 和「單一檔案」，能確保老師在複製代碼到 Netlify 時不會出錯。"
+            analysis: "💡 選 (B)！確保是「完整檔案」且「免安裝」，這樣我們族語老師才能輕鬆操作，不用當工程師也能有自己的教學網頁！"
         }
     ];
 
-    // 2. AI 工具箱題庫
+    // 2. AI 工具箱題庫 (族語老師版)
     const toolData = [
         {
-            q: "Q1：教學時發現學生對「傳統農具」很陌生，想用 AI 畫一張「阿公在田裡使用牛車」的圖片輔助教學，該用哪一個功能？",
+            q: "Q1：講到「射日傳說」的時候，學生都快睡著了...😫 如果想馬上生出一張「勇士背著弓箭走在山稜線上」的超帥插圖吸住他們眼球，要按哪個鍵？",
             answerId: 2,
-            analysis: "解析： 需要視覺輔助時，請選擇【生成教材圖】，輸入具體的情境描述即可。"
+            analysis: "💡 快按【生成教材圖】！用 Midjourney 或 Bing，只要輸入描述，幾秒鐘就能把傳說故事變成電影海報，學生絕對醒過來！"
         },
         {
-            q: "Q2：下週有 10 分鐘的晨光時間要教「數字 1-10」，完全沒有頭緒，希望 AI 幫我規劃一個包含引起動機、活動與結尾的流程，該用哪個？",
+            q: "Q2：下禮拜要交「學期教學計畫」了，可是腦袋一片空白...🤯 有沒有人可以幫我先擬一個「每週進度表」的草稿，讓我再來修改？",
             answerId: 1,
-            analysis: "解析： 需要結構化的教學計畫時，請選擇【撰寫教案】。AI 能快速產出時間分配與流程建議。"
+            analysis: "💡 救星就是【撰寫教案】！叫 ChatGPT 幫你先列出 18 週的架構，包含主題、活動、評量，你再填入族語內容，省下一半時間！"
         },
         {
-            q: "Q3：想要設計一個讓學生練習「買菜」的對話情境，希望 AI 扮演「市場老闆」，讓學生跟它一問一答練習客語，該用哪個？",
+            q: "Q3：班上學生太害羞，不敢開口說族語...😔 如果想做一個「虛擬 Vuvu (阿嬤)」讓學生可以跟她無壓力地練習「問候」和「自我介紹」，該找誰？",
             answerId: 3,
-            analysis: "解析： 需要角色扮演或互動練習時，請選擇【模擬對話】。可以設定 AI 的人設與語氣。"
+            analysis: "💡【模擬對話】是你的好朋友！設定 ChatGPT 扮演慈祥的 Vuvu，讓學生跟它打字或語音聊天，練膽量最適合！"
         },
         {
-            q: "Q4：課文教完了，需要出 5 題單選題當作隨堂測驗，並附上解答，該用哪個？",
+            q: "Q4：剛教完「數字 1-10」，想馬上出一張「連連看」或「選擇題」的小考卷給學生測驗，但不想自己打字打半天...✍️",
             answerId: 4,
-            analysis: "解析： 需要評量工具時，請選擇【自動出題】。把課文貼給 AI，它就能自動生成題目。"
+            analysis: "💡 用【自動出題】就對了！把你的單字表貼給 AI，叫它「出 5 題選擇題，附上解答」，考卷馬上生出來！"
         },
         {
-            q: "Q5：想製作一張「部落祭典」的海報，需要風格強烈的背景圖，該用哪個？",
+            q: "Q5：想要做一張超酷的「族語夏令營」招生海報，需要一個「穿著傳統服飾、手牽手跳舞」的歡樂背景圖，該用哪個？🖼️",
             answerId: 2,
-            analysis: "解析： 只要是關於「產生圖片」的需求，一律選擇【生成教材圖】。"
+            analysis: "💡 只要是「找圖片、畫圖片」，一律找【生成教材圖】！AI 畫出來的圖騰和服飾細節雖然不一定 100% 正確，但拿來當氣氛圖超好用！"
         }
     ];
 
@@ -545,6 +545,7 @@
                     conn.on('data', (data) => {
                         if(data.type === 'MODE') {
                             mode.value = data.payload;
+                            currentTool.value = null; 
                         }
                     });
                     conn.on('error', (err) => alert('找不到房間 ID'));
