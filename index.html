@@ -3,623 +3,729 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>族語 AI 賦能工作坊</title>
-    <!-- 引入 Tailwind CSS -->
+    <title>2026世界母語日 - makila kuman</title>
+    
+    <!-- 載入 Tailwind CSS (樣式庫) -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- 引入 Vue.js 3 -->
-    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-    <!-- 引入 Animate.css -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
-    <!-- 引入 PeerJS (P2P連線) -->
-    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
-    <!-- 引入 Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
+    
+    <!-- 載入 Babel (讓瀏覽器可以看懂 React JSX) -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
     <style>
-        body { 
-            font-family: 'Noto Sans TC', system-ui, -apple-system, sans-serif; 
-            background-color: #f8fafc; 
-            color: #334155; 
-            touch-action: manipulation; 
+        /* 錯誤時的震動動畫 */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
         }
-        /* 玻璃擬態效果 */
-        .glass-panel { 
-            background: rgba(255, 255, 255, 0.9); 
-            backdrop-filter: blur(10px); 
-            border: 1px solid rgba(255, 255, 255, 0.5);
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        .shake {
+            animation: shake 0.3s ease-in-out;
         }
-        /* 按鈕彈跳動畫 */
-        .btn-bounce { transition: transform 0.1s cubic-bezier(0.34, 1.56, 0.64, 1); }
-        .btn-bounce:active { transform: scale(0.95); }
-        
-        [v-cloak] { display: none; }
-        ::-webkit-scrollbar { width: 0px; background: transparent; }
-        
-        /* 統計條動畫 */
-        .stat-bar { transition: height 1s cubic-bezier(0.22, 1, 0.36, 1); }
-        
-        /* 背景裝飾球 */
-        .blob { position: absolute; border-radius: 50%; filter: blur(60px); opacity: 0.5; animation: float 10s infinite ease-in-out; z-index: 0; }
-        @keyframes float { 0% { transform: translate(0, 0); } 50% { transform: translate(20px, -20px); } 100% { transform: translate(0, 0); } }
+
+        /* 隱藏滾動條但保持功能 */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
     </style>
 </head>
-<body class="h-screen overflow-hidden text-sm md:text-base selection:bg-indigo-100 selection:text-indigo-700">
+<body class="bg-stone-900 m-0 p-0 overflow-hidden">
+    <div id="root"></div>
 
-<div id="app" v-cloak class="h-full flex flex-col relative">
+    <script type="text/babel" data-type="module">
+        import React, { useState, useEffect, useRef } from 'https://esm.sh/react@18.2.0';
+        import ReactDOM from 'https://esm.sh/react-dom@18.2.0/client';
+        import { 
+          BookOpen, Edit3, Gift, UserCheck, ArrowRight, ArrowLeft,
+          ThumbsUp, MapPin, Lock, Delete, LogIn, CreditCard, CheckCircle2, Check, RefreshCw, Map, ChevronLeft, ChevronRight
+        } from 'https://esm.sh/lucide-react@0.263.1';
 
-    <!-- 背景動態裝飾 -->
-    <div class="fixed inset-0 pointer-events-none overflow-hidden">
-        <div class="blob bg-blue-200 w-96 h-96 -top-20 -left-20"></div>
-        <div class="blob bg-purple-200 w-96 h-96 top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 animation-delay-2000"></div>
-        <div class="blob bg-orange-100 w-80 h-80 -bottom-20 -right-20 animation-delay-4000"></div>
-    </div>
+        // ==========================================
+        // CONFIGURATION (設定區)
+        // ==========================================
+        // 如果您之後要用 Google Sheet 當後台，請把網址填在這裡
+        // 如果保持空字串或網址錯誤，系統會自動使用下方的 demoPrizes 進行模擬抽獎
+        const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzCJVchaq7JMq1SJvNNNHzj1ojJDgmcffgoscCnrN5lx32_RvAzy1NSQT-VJWLush4/exec";
 
-    <!-- 全域彈跳視窗：密碼輸入 -->
-    <div v-if="showPasswordModal" class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate__animated animate__fadeIn">
-        <div class="bg-white rounded-3xl p-8 w-full max-w-sm shadow-2xl animate__animated animate__zoomIn border border-white/50">
-            <div class="text-center mb-6">
-                <div class="w-16 h-16 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center text-3xl mx-auto mb-4">🔒</div>
-                <h3 class="text-2xl font-black text-slate-800">講師驗證</h3>
-                <p class="text-slate-500 text-sm mt-1">請輸入工作坊密碼以開啟控制台</p>
-            </div>
-            
-            <div class="relative mb-6">
-                <input ref="pwdInput" v-model="passwordInput" type="password" placeholder="輸入密碼 (1234)" class="w-full bg-slate-50 border-2 border-slate-200 rounded-2xl p-4 text-center text-xl font-bold text-slate-800 focus:border-indigo-500 focus:bg-white outline-none transition-all placeholder:text-slate-300 tracking-widest" @keyup.enter="checkPassword">
-                <p v-if="loginError" class="text-red-500 text-xs text-center mt-2 font-bold animate__animated animate__shakeX">⚠️ 密碼錯誤，請重試</p>
-            </div>
+        // ==========================================
+        // ZONE COMPONENTS
+        // ==========================================
 
-            <div class="flex gap-3">
-                <button @click="showPasswordModal = false" class="flex-1 py-4 rounded-xl font-bold text-slate-500 hover:bg-slate-100 transition">取消</button>
-                <button @click="checkPassword" class="flex-1 bg-indigo-600 text-white py-4 rounded-xl font-bold hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition btn-bounce">確認</button>
-            </div>
-        </div>
-    </div>
+        // --- Zone A: 原住民文化知識通 ---
+        const TribeIntroZone = () => {
+          const allTribes = [
+            { title: "阿美族 (Amis)", region: "東部/花蓮台東", subtitle: "豐年祭 (Ilisin)", content: "人口最多。豐年祭包含軍事與教育功能，是族人命脈根源。", icon: "🌾", color: "bg-red-500" },
+            { title: "排灣族 (Paiwan)", region: "南部/屏東台東", subtitle: "收穫祭 (Masalut)", content: "有嚴謹階級制度。小米收穫祭 Masalut 代表「跨越」新年。", icon: "🐍", color: "bg-slate-700" },
+            { title: "泰雅族 (Atayal)", region: "北部/中部山區", subtitle: "祖靈祭 (Maho)", content: "重視織布與文面。祖靈祭透過呼喚祖靈祈求平安。", icon: "🌈", color: "bg-red-700" },
+            { title: "布農族 (Bunun)", region: "中央山脈/南投", subtitle: "射耳祭 (Malahodaigian)", content: "相信精靈(Hanitu)。射耳祭訓練小孩狩獵，獲得社會認同。", icon: "🏹", color: "bg-amber-600" },
+            { title: "卑南族 (Puyuma)", region: "東部/台東平原", subtitle: "年祭 (猴祭/大獵祭)", content: "有嚴謹的年齡階級與會所制度。年祭包含猴祭與大獵祭。", icon: "🐒", color: "bg-yellow-600" },
+            { title: "魯凱族 (Rukai)", region: "南部/屏東高雄", subtitle: "百合花與盪鞦韆", content: "以百合花為族花。婚禮時會舉行盪鞦韆活動，分享喜悅。", icon: "🌺", color: "bg-emerald-600" },
+            { title: "鄒族 (Tsou)", region: "中部/嘉義阿里山", subtitle: "戰祭 (Mayasvi)", content: "祭拜天神與戰神。在庫巴(Kuba)男子會所舉行，祈禱勝利。", icon: "🔥", color: "bg-red-600" },
+            { title: "賽夏族 (Saisiyat)", region: "北部/新竹苗栗", subtitle: "矮靈祭 (Pasta'ay)", content: "每兩年舉辦一次，為了紀念並安撫教會他們農耕的矮人靈魂。", icon: "🌑", color: "bg-indigo-700" },
+            { title: "達悟族 (Tao)", region: "離島/蘭嶼", subtitle: "飛魚祭", content: "唯一的海洋民族。隨黑潮舉行招魚祭，有嚴格的生態規範。", icon: "🐟", color: "bg-blue-500" },
+            { title: "邵族 (Thao)", region: "中部/南投日月潭", subtitle: "祖靈籃與杵音", content: "供奉祖靈籃(Ulalaluan)。杵音音樂聞名，農曆八月過年。", icon: "🌊", color: "bg-amber-700" },
+            { title: "噶瑪蘭族 (Kavalan)", region: "東部/花蓮", subtitle: "海祭與香蕉絲", content: "保有獨特香蕉絲編織。春夏間舉行海祭，感謝海洋賜食。", icon: "🍌", color: "bg-yellow-700" },
+            { title: "太魯閣族 (Truku)", region: "東部/花蓮山區", subtitle: "彩虹橋傳說", content: "重視織布與文面。死後要通過彩虹橋(Hakaw Utux)見祖靈。", icon: "🌉", color: "bg-teal-600" },
+            { title: "撒奇萊雅族 (Sakizaya)", region: "東部/花蓮", subtitle: "火神祭 (Palamal)", content: "曾隱身阿美族百年。火神祭紀念祖先，包含繞境儀式。", icon: "🔥", color: "bg-orange-700" },
+            { title: "賽德克族 (Seediq)", region: "中部/南投花蓮", subtitle: "崇信 Utux", content: "平權社會。祭儀重點在祈求族運與 Utux (神/祖靈) 的庇佑。", icon: "⚔️", color: "bg-red-800" },
+            { title: "拉阿魯哇族 (Hla'alua)", region: "南部/高雄桃源", subtitle: "聖貝祭 (Miatungusu)", content: "注重農耕祭儀。祭祀 12 位貝神，是主要的圖騰象徵。", icon: "🐚", color: "bg-cyan-600" },
+            { title: "卡那卡那富族 (Kanakanavu)", region: "南部/高雄那瑪夏", subtitle: "米貢祭 (Mikong)", content: "重要祭儀有米貢祭與河祭。傳統狩獵方式包含帶狗與陷阱。", icon: "🐕", color: "bg-lime-600" },
+          ];
 
-    <!-- 1. 首頁 -->
-    <div v-if="view === 'home'" class="flex-1 flex flex-col items-center justify-center p-6 relative z-10">
-        <div class="text-center mb-12 animate__animated animate__fadeInUp">
-            <span class="inline-block py-1 px-3 rounded-full bg-indigo-100 text-indigo-700 text-xs font-bold tracking-wider mb-4 border border-indigo-200">INTERACTIVE WORKSHOP</span>
-            <h1 class="text-4xl md:text-6xl font-black text-slate-800 tracking-tight leading-tight">
-                族語 AI<br>
-                <span class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">賦能工作坊</span>
-            </h1>
-        </div>
-        
-        <div class="flex flex-col md:flex-row gap-6 w-full max-w-2xl animate__animated animate__fadeInUp animate__delay-1s">
-            <!-- 講師入口 -->
-            <button @click="openPasswordModal" class="flex-1 bg-white p-8 rounded-3xl shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 border border-slate-100 group text-left relative overflow-hidden">
-                <div class="absolute right-0 bottom-0 opacity-10 transform translate-x-4 translate-y-4 group-hover:scale-110 transition-transform">
-                    <svg class="w-32 h-32" fill="currentColor" viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-5 14H9v-2h6v2zm5-7H4V6h16v5z"/></svg>
-                </div>
-                <div class="relative z-10">
-                    <div class="w-12 h-12 bg-indigo-100 rounded-2xl flex items-center justify-center text-2xl mb-4 text-indigo-600">👨‍💻</div>
-                    <h2 class="text-2xl font-bold text-slate-800 mb-1">我是講師</h2>
-                    <p class="text-slate-500 text-sm">輸入密碼進入控制台</p>
-                </div>
-            </button>
+          const [cards, setCards] = useState([]);
+          const [idx, setIdx] = useState(0);
+          const [isFinished, setIsFinished] = useState(false);
 
-            <!-- 學員入口 -->
-            <button @click="view = 'scan'" class="flex-1 bg-gradient-to-br from-indigo-600 to-purple-700 p-8 rounded-3xl shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 group text-left relative overflow-hidden text-white">
-                <div class="absolute right-0 bottom-0 opacity-20 transform translate-x-4 translate-y-4 group-hover:scale-110 transition-transform">
-                    <svg class="w-32 h-32" fill="currentColor" viewBox="0 0 24 24"><path d="M17 1.01L7 1c-1.1 0-2 .9-2 2v18c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V3c0-1.1-.9-1.99-2-1.99zM17 19H7V5h10v14z"/></svg>
-                </div>
-                <div class="relative z-10">
-                    <div class="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center text-2xl mb-4 backdrop-blur-sm">📱</div>
-                    <h2 class="text-2xl font-bold mb-1">我是學員</h2>
-                    <p class="text-indigo-100 text-sm">輸入 ID 加入挑戰</p>
-                </div>
-            </button>
-        </div>
-    </div>
+          useEffect(() => {
+            restart();
+          }, []);
 
-    <!-- 2. 學員連線頁面 -->
-    <div v-if="view === 'scan'" class="flex-1 flex flex-col items-center justify-center p-6 relative z-10">
-        <div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-sm text-center border border-slate-100 relative overflow-hidden">
-            <div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-indigo-500 to-purple-500"></div>
-            <h2 class="text-2xl font-bold mb-2 text-slate-800">加入房間</h2>
-            <p class="text-slate-500 mb-8 text-sm">請輸入講師大螢幕上的 4 位數 ID</p>
-            <div class="mb-8 relative">
-                <input v-model="targetId" type="tel" maxlength="4" placeholder="0000" class="w-full text-center text-5xl font-mono font-bold bg-slate-50 border-2 border-slate-200 rounded-2xl py-6 text-slate-800 focus:border-indigo-500 focus:bg-white outline-none transition-all placeholder:text-slate-200 tracking-widest">
-            </div>
-            <button @click="connectToAdmin" :disabled="!targetId" class="w-full bg-slate-900 text-white py-4 rounded-xl text-lg font-bold hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg flex items-center justify-center gap-2 btn-bounce">
-                <span>🚀 開始挑戰</span>
-            </button>
-            <button @click="view = 'home'" class="mt-6 text-slate-400 hover:text-slate-600 transition text-sm flex items-center justify-center gap-1 mx-auto">
-                返回首頁
-            </button>
-        </div>
-    </div>
+          const restart = () => {
+            const shuffled = [...allTribes].sort(() => 0.5 - Math.random());
+            setCards(shuffled.slice(0, 10));
+            setIdx(0);
+            setIsFinished(false);
+          };
 
-    <!-- 3. 講師控制台 -->
-    <div v-if="view === 'admin'" class="h-full flex flex-col md:flex-row relative z-10">
-        <!-- 側邊欄 -->
-        <div class="w-full md:w-72 bg-white border-r border-slate-200 flex flex-col shadow-lg z-20">
-            <div class="p-6 border-b border-slate-100 bg-slate-50/50">
-                <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Room ID</p>
-                <div class="flex items-center justify-between">
-                    <span class="text-4xl font-mono font-black text-slate-800 tracking-wider">{{ displayId }}</span>
-                    <div class="flex items-center px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-bold" :class="{'bg-red-100 text-red-700': connectionCount > 60}">
-                        <span class="w-2 h-2 rounded-full mr-2 animate-pulse" :class="connectionCount > 60 ? 'bg-red-500' : 'bg-green-500'"></span>
-                        {{ connectionCount }} 人
-                    </div>
-                </div>
-            </div>
-            
-            <div class="flex-1 overflow-y-auto p-4 space-y-2">
-                <p class="text-xs font-bold text-slate-400 px-2 mb-2">教學模式</p>
-                
-                <button @click="setMode('quiz')" :class="mode === 'quiz' ? 'bg-indigo-50 text-indigo-700 border-indigo-200 shadow-sm' : 'hover:bg-slate-50 text-slate-600 border-transparent'" class="w-full text-left px-4 py-3 rounded-xl transition-all flex items-center border">
-                    <span class="text-2xl mr-3">⚖️</span>
-                    <div>
-                        <div class="font-bold text-sm">提示詞 PK 賽</div>
-                        <div class="text-[10px] opacity-70">Prompt Challenge (Q{{ currentQIndex + 1 }})</div>
-                    </div>
-                </button>
+          const handleNext = () => {
+            if (idx < cards.length - 1) {
+              setIdx(prev => prev + 1);
+            } else {
+              setIsFinished(true);
+            }
+          };
 
-                <button @click="setMode('tool')" :class="mode === 'tool' ? 'bg-purple-50 text-purple-700 border-purple-200 shadow-sm' : 'hover:bg-slate-50 text-slate-600 border-transparent'" class="w-full text-left px-4 py-3 rounded-xl transition-all flex items-center border">
-                    <span class="text-2xl mr-3">🧰</span>
-                    <div>
-                        <div class="font-bold text-sm">AI 工具箱</div>
-                        <div class="text-[10px] opacity-70">Tool Selection (Q{{ currentToolQIndex + 1 }})</div>
-                    </div>
-                </button>
-            </div>
+          const handlePrev = () => {
+            if (idx > 0) {
+              setIdx(prev => prev - 1);
+            }
+          };
 
-            <div class="p-4 border-t border-slate-100 bg-slate-50/50 space-y-3">
-                <button @click="showStats = !showStats" :class="showStats ? 'bg-slate-800 text-white' : 'bg-white text-slate-700 border border-slate-200'" class="w-full py-3 rounded-xl text-sm font-bold transition hover:shadow-md flex items-center justify-center gap-2 shadow-sm">
-                    <span>{{ showStats ? '隱藏結果' : '👁️ 揭曉結果' }}</span>
-                </button>
-                <button @click="clearVotes" class="w-full py-2 text-slate-400 hover:text-red-500 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1">
-                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-                    清除投票
-                </button>
-            </div>
-        </div>
+          if (cards.length === 0) return null;
 
-        <!-- 右側展示區 -->
-        <div class="flex-1 flex flex-col items-center justify-center p-6 relative overflow-hidden">
-            
-            <!-- 等待連線 QR Code -->
-            <div v-if="connectionCount === 0" class="absolute inset-0 bg-white/90 z-50 flex flex-col items-center justify-center text-slate-800 p-6 text-center backdrop-blur-sm">
-                <h3 class="text-3xl font-black mb-2 text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">等待學員連線...</h3>
-                <div class="bg-white p-4 rounded-3xl mb-6 shadow-2xl border border-slate-100">
-                    <img :src="`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(shareUrl)}`" alt="QR Code" class="w-48 h-48">
-                </div>
-                <div class="text-xl font-bold text-slate-600">
-                    請輸入 ID: <span class="text-indigo-600 font-mono text-5xl ml-2">{{ displayId }}</span>
-                </div>
-                <button @click="connectionCount = 1" class="mt-8 text-sm text-slate-400 hover:text-indigo-500 transition underline">跳過等待 (測試用)</button>
-            </div>
+          return (
+            <div className="flex flex-col items-center justify-center min-h-full bg-stone-100 p-4">
+              <div className="md:absolute md:top-4 md:left-4 mb-4 md:mb-0 bg-stone-800 text-white px-4 py-2 rounded-full font-bold flex items-center gap-2 z-10 shadow-lg">
+                <BookOpen size={20} /> Zone A：原住民文化知識通
+              </div>
 
-            <!-- A. 提示詞 PK 賽 -->
-            <div v-if="mode === 'quiz'" class="w-full max-w-6xl h-full flex flex-col animate__animated animate__fadeIn">
-                <!-- 題目導航 -->
-                <div class="flex items-center justify-between mb-6">
-                    <button @click="prevQuestion" :disabled="currentQIndex === 0" class="px-4 py-2 rounded-lg bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed font-bold flex items-center gap-2 transition">
-                        ← 上一題
-                    </button>
-                    <div class="text-center">
-                        <span class="bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest mb-2 inline-block">Q{{ currentQIndex + 1 }} / {{ quizData.length }}</span>
-                        <h3 class="text-xl md:text-2xl font-bold text-slate-800 leading-snug max-w-3xl">{{ quizData[currentQIndex].q }}</h3>
-                    </div>
-                    <button @click="nextQuestion" :disabled="currentQIndex === quizData.length - 1" class="px-4 py-2 rounded-lg bg-slate-800 text-white hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed font-bold flex items-center gap-2 shadow-md transition">
-                        下一題 →
-                    </button>
-                </div>
-                
-                <!-- 選項區 -->
-                <div class="flex flex-col md:flex-row gap-6 mb-4 flex-1 min-h-0">
-                    <!-- 選項 A -->
-                    <div class="flex-1 relative group">
-                        <div v-if="showStats" class="absolute inset-0 z-20 flex flex-col justify-end rounded-3xl overflow-hidden pointer-events-none">
-                            <div class="bg-indigo-600/10 w-full stat-bar relative" :style="{ height: getQuizPercent('A') + '%' }">
-                                <div class="absolute bottom-4 w-full text-center">
-                                    <span class="text-5xl font-black text-indigo-600">{{ quizStats['A'] || 0 }}</span>
-                                    <span class="text-xs text-indigo-400 font-bold block">VOTES</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="h-full bg-white border-2 p-6 rounded-3xl shadow-sm transition-all duration-500 relative overflow-hidden flex flex-col" 
-                             :class="showStats ? (quizData[currentQIndex].answer === 'A' ? 'border-green-500 bg-green-50 ring-4 ring-green-100' : 'border-slate-100 opacity-60') : 'border-indigo-100 hover:border-indigo-300'">
-                            
-                            <div v-if="showStats && quizData[currentQIndex].answer === 'A'" class="absolute top-4 right-4 bg-green-500 text-white text-xs font-bold px-3 py-1 rounded-full animate__animated animate__bounceIn">正解！</div>
-
-                            <span class="text-6xl font-black text-indigo-50 mb-4 block select-none">A</span>
-                            <div class="relative z-10 flex-1 flex items-center justify-center text-center">
-                                <p class="text-lg md:text-xl text-slate-700 font-bold leading-relaxed">{{ quizData[currentQIndex].options.A }}</p>
-                            </div>
-                        </div>
-                    </div>
+              {!isFinished ? (
+                <div className="flex flex-col items-center justify-center w-full max-w-6xl flex-1 py-4 md:py-16">
+                  
+                  {/* 大版面設計 */}
+                  <div className="w-full bg-white rounded-[2rem] shadow-2xl overflow-hidden flex flex-col md:flex-row border border-stone-200 animate-in zoom-in duration-300 md:min-h-[600px] h-auto">
                     
-                    <!-- VS -->
-                    <div class="flex items-center justify-center">
-                        <div class="w-12 h-12 rounded-full bg-slate-100 text-slate-300 font-black flex items-center justify-center text-sm italic">VS</div>
+                    {/* 左側 */}
+                    <div className={`${cards[idx].color} w-full md:w-2/5 p-8 md:p-12 flex flex-col justify-center items-center text-white relative transition-colors duration-500 min-h-[300px] md:h-auto`}>
+                       <div className="absolute top-0 left-0 w-full h-full overflow-hidden opacity-10 pointer-events-none">
+                         <div className="absolute -top-10 -left-10 w-40 h-40 rounded-full bg-white"></div>
+                         <div className="absolute bottom-10 right-10 w-20 h-20 rounded-full bg-white"></div>
+                       </div>
+                       
+                       <div className="text-sm font-bold bg-black/20 px-3 py-1 rounded-full mb-4 flex items-center gap-2">
+                          <MapPin size={14}/> {cards[idx].region}
+                       </div>
+                       
+                       <h2 className="text-4xl md:text-5xl lg:text-6xl font-black mb-4 text-center leading-tight tracking-tight drop-shadow-sm">
+                         {cards[idx].title}
+                       </h2>
+                       
+                       <div className="mt-4 bg-white/20 backdrop-blur-md px-4 py-2 md:px-6 rounded-xl text-lg md:text-xl font-bold border border-white/40 shadow-lg text-center">
+                          {cards[idx].subtitle}
+                       </div>
+
+                       <div className="absolute bottom-4 left-0 w-full text-center text-white/50 font-mono text-sm">
+                         {idx + 1} / {cards.length}
+                       </div>
                     </div>
 
-                    <!-- 選項 B -->
-                    <div class="flex-1 relative group">
-                        <div v-if="showStats" class="absolute inset-0 z-20 flex flex-col justify-end rounded-3xl overflow-hidden pointer-events-none">
-                            <div class="bg-purple-600/10 w-full stat-bar relative" :style="{ height: getQuizPercent('B') + '%' }">
-                                <div class="absolute bottom-4 w-full text-center">
-                                    <span class="text-5xl font-black text-purple-600">{{ quizStats['B'] || 0 }}</span>
-                                    <span class="text-xs text-purple-400 font-bold block">VOTES</span>
-                                </div>
-                            </div>
-                        </div>
+                    {/* 右側 */}
+                    <div className="w-full md:w-3/5 p-6 md:p-16 flex flex-col justify-between bg-white relative">
+                      <div className="mb-4 md:mb-auto">
+                        <span className="text-stone-400 font-bold tracking-widest text-sm uppercase">CULTURE NOTE</span>
+                        <h3 className="text-2xl md:text-3xl font-black text-stone-800 mt-2 mb-4 md:mb-6 border-l-8 border-stone-800 pl-4">
+                          文化小知識
+                        </h3>
+                        <p className="text-xl md:text-3xl text-stone-600 font-bold leading-relaxed text-justify">
+                          {cards[idx].content}
+                        </p>
+                      </div>
 
-                        <div class="h-full bg-white border-2 p-6 rounded-3xl shadow-sm transition-all duration-500 relative overflow-hidden flex flex-col"
-                             :class="showStats ? (quizData[currentQIndex].answer === 'B' ? 'border-green-500 bg-green-50 ring-4 ring-green-100' : 'border-slate-100 opacity-60') : 'border-purple-100 hover:border-purple-300'">
-                            
-                            <div v-if="showStats && quizData[currentQIndex].answer === 'B'" class="absolute top-4 right-4 bg-green-500 text-white text-xs font-bold px-3 py-1 rounded-full animate__animated animate__bounceIn">正解！</div>
-
-                            <span class="text-6xl font-black text-purple-50 mb-4 block select-none">B</span>
-                            <div class="relative z-10 flex-1 flex items-center justify-center text-center">
-                                <p class="text-lg md:text-xl text-slate-700 font-bold leading-relaxed">{{ quizData[currentQIndex].options.B }}</p>
-                            </div>
-                        </div>
+                      <div className="mt-8 pt-8 border-t border-stone-100 flex flex-col md:flex-row gap-4">
+                         <button 
+                            onClick={handlePrev}
+                            disabled={idx === 0}
+                            className={`px-6 py-4 rounded-xl font-bold flex items-center justify-center gap-2 transition-all order-2 md:order-1 ${
+                              idx === 0 
+                                ? 'bg-stone-100 text-stone-300 cursor-not-allowed' 
+                                : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+                            }`}
+                          >
+                            <ArrowLeft size={24}/> <span className="md:hidden">上一個</span>
+                          </button>
+                          
+                          <button 
+                            onClick={handleNext}
+                            className="flex-1 px-8 py-4 bg-stone-800 text-white rounded-xl font-bold text-xl shadow-xl hover:bg-stone-700 active:scale-95 transition-all flex items-center justify-center gap-3 order-1 md:order-2"
+                          >
+                            {idx === cards.length - 1 ? "完成學習" : "我知道了"} <ArrowRight size={24}/>
+                          </button>
+                      </div>
                     </div>
+                  </div>
+
                 </div>
-
-                <!-- 解析區 -->
-                <div v-if="showStats" class="bg-slate-800 text-white p-6 rounded-2xl shadow-xl animate__animated animate__fadeInUp">
-                    <div class="flex items-start gap-4">
-                        <div class="text-2xl">💡</div>
-                        <div>
-                            <h4 class="font-bold text-yellow-400 mb-1 text-sm uppercase tracking-wide">AI 老師小撇步</h4>
-                            <p class="text-base md:text-lg leading-relaxed opacity-90">{{ quizData[currentQIndex].analysis }}</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- B. AI 工具箱 (情境判斷題) -->
-            <div v-if="mode === 'tool'" class="w-full max-w-6xl h-full flex flex-col animate__animated animate__fadeIn">
-                <!-- 題目導航 -->
-                <div class="flex items-center justify-between mb-6">
-                    <button @click="prevToolQuestion" :disabled="currentToolQIndex === 0" class="px-4 py-2 rounded-lg bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed font-bold flex items-center gap-2 transition">
-                        ← 上一題
+              ) : (
+                <div className="w-full max-w-lg text-center animate-in zoom-in py-20">
+                  <div className="text-8xl mb-6">🎓</div>
+                  <h2 className="text-4xl font-black text-stone-800 mb-4">學習完成！</h2>
+                  <p className="text-xl text-stone-600 mb-8 font-bold">你已經看完了 10 個族群的知識。<br/>準備好接受隨堂考了嗎？</p>
+                  <div className="flex flex-col md:flex-row gap-4 justify-center p-4">
+                    <button onClick={restart} className="px-6 py-3 bg-white text-stone-500 rounded-xl font-bold shadow-md hover:bg-stone-50">
+                      再複習一次
                     </button>
-                    <div class="text-center">
-                        <span class="bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-widest mb-2 inline-block">情境題 Q{{ currentToolQIndex + 1 }} / {{ toolData.length }}</span>
-                        <h3 class="text-xl md:text-2xl font-bold text-slate-800 leading-snug max-w-3xl">{{ toolData[currentToolQIndex].q }}</h3>
+                    <div className="px-6 py-3 bg-amber-500 text-white rounded-xl font-bold shadow-md animate-bounce text-center">
+                      請前往 Zone B 考試！👇
                     </div>
-                    <button @click="nextToolQuestion" :disabled="currentToolQIndex === toolData.length - 1" class="px-4 py-2 rounded-lg bg-slate-800 text-white hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed font-bold flex items-center gap-2 shadow-md transition">
-                        下一題 →
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        };
+
+        // --- Zone B: 卡片解密測驗 ---
+        const TribeQuizZone = () => {
+          const [phase, setPhase] = useState('select'); 
+          const [selectedCards, setSelectedCards] = useState([]); 
+          const [currentCardIdx, setCurrentCardIdx] = useState(0); 
+          const [isAnswered, setIsAnswered] = useState(false);
+          const [isCorrect, setIsCorrect] = useState(false);
+          const [score, setScore] = useState(0);
+          
+          const TARGET_COUNT = 2;
+
+          const cardData = [
+            { id: 1, title: "原住民族", q: "台灣原住民族目前官方認定共有幾族？", options: ["9族", "14族", "16族"], ans: 2 },
+            { id: 2, title: "祭典的意義", q: "原住民舉辦祭典的主要意義是什麼？", options: ["單純聚餐", "表達對天地鬼神的崇敬", "運動競技比賽"], ans: 1 },
+            { id: 3, title: "阿美族", q: "阿美族最盛大的祭典「豐年祭」通常在什麼時候舉辦？", options: ["春節期間", "7月中旬至9月初", "12月寒冬"], ans: 1 },
+            { id: 4, title: "排灣族", q: "排灣族的「Masalut」祭典中，「Salut」這個字代表什麼意思？", options: ["跨越/邁向新年", "豐收", "打獵"], ans: 0 },
+            { id: 5, title: "泰雅族", q: "泰雅族最重要的信仰中心是什麼？", options: ["太陽神", "祖靈 (Utux)", "百步蛇"], ans: 1 },
+            { id: 6, title: "布農族", q: "布農族的「射耳祭」除了祭祀，還有什麼重要功能？", options: ["訓練小孩狩獵與成長", "尋找結婚對象", "祈求下雨"], ans: 0 },
+            { id: 7, title: "太魯閣族", q: "太魯閣族擅長的工藝除了藤編，還有什麼？", options: ["陶壺製作", "彩虹般的織布", "造船"], ans: 1 },
+            { id: 8, title: "卑南族", q: "卑南族盛大的「年祭」中，包含了哪兩個重要活動？", options: ["猴祭與大獵祭", "飛魚祭與海祭", "戰祭與小米祭"], ans: 0 },
+            { id: 9, title: "魯凱族", q: "魯凱族在婚禮或祭典中，常會舉辦什麼浪漫的活動？", options: ["盪鞦韆", "賽跑", "射箭"], ans: 0 },
+            { id: 10, title: "賽德克族", q: "賽德克族除了女子織布外，男子擅長什麼工藝？", options: ["編籃及籐帽", "製作琉璃珠", "雕刻石板"], ans: 0 },
+            { id: 11, title: "鄒族", q: "鄒族的「凱旋祭 (Mayasvi)」主要是祭拜哪位神祇？", options: ["海神", "天神與戰神", "農神"], ans: 1 },
+            { id: 12, title: "賽夏族", q: "賽夏族的「矮靈祭 (Pasta'ay)」是為了紀念誰？", options: ["達隘 (矮人)", "祖先", "巨人"], ans: 0 },
+            { id: 13, title: "雅美族(達悟族)", q: "雅美族(達悟族)最重要的生態文化與什麼有關？", options: ["山豬", "飛魚", "百合花"], ans: 1 },
+            { id: 14, title: "噶瑪蘭族", q: "噶瑪蘭族保有哪項非常有特色的工藝技術？", options: ["編織香蕉絲", "製作陶壺", "皮雕"], ans: 0 },
+            { id: 15, title: "撒奇萊雅族", q: "撒奇萊雅族的「火神祭 (Palamal)」是為了紀念什麼？", options: ["族群重生與祖先", "豐收", "成年禮"], ans: 0 },
+            { id: 16, title: "邵族", q: "邵族家家戶戶供奉什麼來象徵祖靈？", options: ["祖靈籃 (Ulalaluan)", "陶壺", "百步蛇紋"], ans: 0 },
+            { id: 17, title: "拉阿魯哇族", q: "拉阿魯哇族的「聖貝祭」祭祀的對象是？", options: ["太陽神", "12位貝神", "山神"], ans: 1 },
+            { id: 18, title: "卡那卡那富族", q: "卡那卡那富族的重要祭儀「米貢祭」主要感謝什麼？", options: ["小米豐收", "獵物豐收", "戰鬥勝利"], ans: 0 },
+            { id: 19, title: "正名之路", q: "哪兩個族群在 2014 年終於正名成功？", options: ["邵族與噶瑪蘭族", "拉阿魯哇族與卡那卡那富族", "賽德克族與太魯閣族"], ans: 1 },
+            { id: 20, title: "探索台灣之美", q: "卡片中提到探索台灣原民文化最好的方式是？", options: ["在家看電視", "走進部落體驗美景與美食", "只看書本"], ans: 1 },
+          ];
+
+          const handleToggleCard = (card) => {
+            if (selectedCards.find(c => c.id === card.id)) {
+              setSelectedCards(prev => prev.filter(c => c.id !== card.id));
+            } else {
+              if (selectedCards.length < TARGET_COUNT) {
+                setSelectedCards(prev => [...prev, card].sort((a, b) => a.id - b.id));
+              }
+            }
+          };
+
+          const handleStartQuiz = () => {
+            if (selectedCards.length === TARGET_COUNT) {
+              setPhase('quiz');
+              setCurrentCardIdx(0);
+              setScore(0);
+              setIsAnswered(false);
+              setIsCorrect(false);
+            }
+          };
+
+          const handleAnswer = (idx) => {
+            if (isAnswered) return;
+            const currentCard = selectedCards[currentCardIdx];
+            const correct = idx === currentCard.ans;
+            setIsAnswered(true);
+            setIsCorrect(correct);
+            if(correct) setScore(s => s + 1);
+          };
+
+          const handleNextQuestion = () => {
+            if (currentCardIdx < TARGET_COUNT - 1) {
+              setCurrentCardIdx(prev => prev + 1);
+              setIsAnswered(false);
+              setIsCorrect(false);
+            } else {
+              setPhase('summary');
+            }
+          };
+
+          const resetAll = () => {
+            setSelectedCards([]);
+            setPhase('select');
+          };
+
+          return (
+            <div className="flex flex-col items-center justify-center min-h-full bg-amber-50 p-4">
+              <div className="md:absolute md:top-4 md:left-4 mb-4 md:mb-0 bg-amber-600 text-white px-4 py-2 rounded-full font-bold flex items-center gap-2 z-10 shadow">
+                <CreditCard size={20} /> Zone B：卡片解密測驗
+              </div>
+
+              {phase === 'select' && (
+                <div className="w-full max-w-5xl text-center animate-in zoom-in h-full flex flex-col flex-1 pb-20 md:pb-0">
+                  <div className="mb-4">
+                    <h2 className="text-2xl md:text-3xl font-black text-amber-900 mb-2">請選擇卡片上的 {TARGET_COUNT} 個號碼</h2>
+                    <p className="text-amber-600 font-bold">
+                      目前已選擇：
+                      <span className="text-2xl mx-2 font-black text-stone-800">
+                        {selectedCards.length} / {TARGET_COUNT}
+                      </span>
+                    </p>
+                  </div>
+                  
+                  <div className="flex-1 overflow-y-auto px-2 no-scrollbar min-h-0">
+                    <div className="grid grid-cols-4 md:grid-cols-5 gap-3">
+                      {cardData.map((card) => {
+                        const isSelected = selectedCards.find(c => c.id === card.id);
+                        return (
+                          <button
+                            key={card.id}
+                            onClick={() => handleToggleCard(card)}
+                            className={`aspect-square rounded-2xl shadow-md border-b-4 flex flex-col items-center justify-center group transition-all duration-200 ${
+                              isSelected 
+                                ? 'bg-amber-500 border-amber-700 -translate-y-1' 
+                                : 'bg-white border-amber-200 hover:border-amber-400'
+                            }`}
+                          >
+                            <span className={`text-3xl font-black transition-colors ${isSelected ? 'text-white' : 'text-stone-300 group-hover:text-amber-500'}`}>
+                              {card.id.toString().padStart(2, '0')}
+                            </span>
+                            <span className={`text-xs font-bold mt-1 px-1 truncate w-full ${isSelected ? 'text-white' : 'text-stone-500'}`}>
+                              {card.title}
+                            </span>
+                            {isSelected && <CheckCircle2 className="absolute top-2 right-2 text-white" size={20} />}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="w-full flex justify-center mt-4 pb-4 md:pb-0 sticky bottom-0 bg-amber-50/95 p-4 backdrop-blur-sm">
+                    <button 
+                      onClick={handleStartQuiz}
+                      disabled={selectedCards.length !== TARGET_COUNT}
+                      className={`w-full md:w-auto px-12 py-4 rounded-full font-black text-2xl shadow-xl flex items-center justify-center gap-3 transition-all transform ${
+                        selectedCards.length === TARGET_COUNT 
+                          ? 'bg-stone-800 text-white hover:bg-stone-700 hover:scale-105 active:scale-95 cursor-pointer' 
+                          : 'bg-stone-300 text-stone-500 cursor-not-allowed'
+                      }`}
+                    >
+                      {selectedCards.length === TARGET_COUNT ? "開始解密" : `請再選 ${TARGET_COUNT - selectedCards.length} 個`} <ArrowRight />
                     </button>
+                  </div>
                 </div>
+              )}
 
-                <!-- 選項區 -->
-                <div class="w-full grid grid-cols-2 md:grid-cols-4 gap-4 px-4 flex-1 content-center min-h-0">
-                     <div v-for="tool in tools" :key="tool.id" 
-                          class="bg-white rounded-3xl p-4 flex flex-col items-center justify-end h-80 relative overflow-hidden group border-2 shadow-sm transition-all duration-300"
-                          :class="showStats ? (tool.id === toolData[currentToolQIndex].answerId ? 'border-green-500 ring-4 ring-green-100 bg-green-50' : 'border-slate-50 opacity-40') : 'border-slate-50 hover:border-purple-200'">
-                        
-                        <!-- 統計條 -->
-                        <div v-if="showStats" class="absolute bottom-0 left-0 w-full bg-purple-100/50 transition-all duration-1000 ease-out z-0" :style="{ height: getToolPercent(tool.id) + '%' }"></div>
-                        
-                        <!-- 正確標記 -->
-                        <div v-if="showStats && tool.id === toolData[currentToolQIndex].answerId" class="absolute top-2 right-2 bg-green-500 text-white text-[10px] font-bold px-2 py-1 rounded-full z-20 animate__animated animate__bounceIn">CORRECT</div>
-
-                        <div class="relative z-10 text-center flex flex-col h-full justify-between py-4 w-full">
-                            <div class="text-6xl filter drop-shadow-sm">{{ tool.emoji }}</div>
-                            <div>
-                                <div class="text-4xl font-black text-slate-800 mb-1" v-if="showStats">{{ toolStats[tool.id] || 0 }}</div>
-                                <div class="text-xs text-slate-400 font-bold uppercase tracking-wider" v-if="showStats">Votes</div>
-                                <div class="text-4xl font-black text-slate-200 mb-1" v-else>?</div>
-                            </div>
-                            <div class="text-sm font-bold text-slate-600">{{ tool.name }}</div>
-                        </div>
-                     </div>
-                </div>
-
-                <!-- 解析區 -->
-                <div v-if="showStats" class="bg-slate-800 text-white p-6 rounded-2xl shadow-xl animate__animated animate__fadeInUp mt-4">
-                    <div class="flex items-start gap-4">
-                        <div class="text-2xl">💡</div>
-                        <div>
-                            <h4 class="font-bold text-yellow-400 mb-1 text-sm uppercase tracking-wide">AI 老師小撇步</h4>
-                            <p class="text-base md:text-lg leading-relaxed opacity-90">{{ toolData[currentToolQIndex].analysis }}</p>
-                        </div>
+              {phase === 'quiz' && (
+                <div className="w-full max-w-2xl animate-in slide-in-from-right flex flex-col h-full md:block overflow-y-auto pb-4">
+                  <div className="flex justify-between items-center mb-6 px-2">
+                    <span className="text-amber-800 font-bold uppercase tracking-widest">
+                      任務進度 {currentCardIdx + 1} / {TARGET_COUNT}
+                    </span>
+                    <div className="flex gap-2">
+                      {selectedCards.map((c, i) => (
+                        <div key={i} className={`w-3 h-3 rounded-full ${i === currentCardIdx ? 'bg-amber-600' : i < currentCardIdx ? 'bg-green-500' : 'bg-gray-300'}`} />
+                      ))}
                     </div>
+                  </div>
+
+                  <div className="bg-white p-8 rounded-3xl shadow-xl border-b-8 border-amber-200 mb-6 text-center">
+                    <div className="inline-block bg-amber-100 text-amber-800 px-4 py-1 rounded-full font-bold text-sm mb-4">
+                      卡片編號 #{selectedCards[currentCardIdx].id.toString().padStart(2, '0')}
+                    </div>
+                    <h3 className="text-2xl md:text-3xl font-black text-stone-800 leading-snug">
+                      {selectedCards[currentCardIdx].q}
+                    </h3>
+                  </div>
+
+                  <div className="grid gap-4 mb-20 md:mb-0">
+                    {selectedCards[currentCardIdx].options.map((opt, i) => (
+                      <button
+                        key={i}
+                        onClick={() => handleAnswer(i)}
+                        disabled={isAnswered}
+                        className={`p-5 rounded-xl font-bold text-xl text-left transition-all border-2 flex items-center justify-between ${
+                          isAnswered 
+                            ? i === selectedCards[currentCardIdx].ans 
+                              ? 'bg-green-500 text-white border-green-600 shadow-md' 
+                              : 'bg-stone-100 text-stone-400 border-transparent'
+                            : 'bg-white text-stone-700 border-stone-200 hover:border-amber-400 hover:shadow-md hover:scale-[1.02]'
+                        }`}
+                      >
+                        <span>{opt}</span>
+                        {isAnswered && i === selectedCards[currentCardIdx].ans && <Check size={28} className="animate-bounce" />}
+                      </button>
+                    ))}
+                  </div>
+
+                  {isAnswered && (
+                    <div className="fixed bottom-0 left-0 w-full md:relative md:mt-8 bg-white/95 md:bg-transparent p-4 md:p-0 border-t md:border-t-0 border-stone-200 backdrop-blur-md md:backdrop-blur-none animate-in slide-in-from-bottom z-50 flex flex-col items-center text-center">
+                      <div className={`text-2xl md:text-3xl font-black mb-2 ${isCorrect ? 'text-green-600' : 'text-red-500'}`}>
+                        {isCorrect ? "答對了！" : "再看一次卡片喔！"}
+                      </div>
+                      <button 
+                        onClick={handleNextQuestion}
+                        className="w-full md:w-auto px-10 py-3 bg-stone-800 text-white rounded-full font-bold text-lg hover:bg-stone-700 shadow-lg flex items-center justify-center gap-2"
+                      >
+                        {currentCardIdx < TARGET_COUNT - 1 ? "下一題" : "查看結果"} <ArrowRight size={18}/>
+                      </button>
+                    </div>
+                  )}
                 </div>
+              )}
+
+              {phase === 'summary' && (
+                <div className="w-full max-w-lg text-center animate-in zoom-in bg-white p-10 rounded-3xl shadow-2xl border-4 border-amber-200 my-auto">
+                  <div className="text-8xl mb-6">{score === TARGET_COUNT ? '🏆' : '💪'}</div>
+                  <h2 className="text-4xl font-black text-amber-900 mb-4">挑戰完成！</h2>
+                  <p className="text-2xl text-stone-600 mb-8">
+                    你在 {TARGET_COUNT} 題中答對了 <span className="text-amber-600 font-bold text-4xl mx-2">{score}</span> 題
+                  </p>
+                  
+                  <div className="flex gap-4 justify-center">
+                    {score === TARGET_COUNT ? (
+                      <div className="bg-green-100 px-6 py-4 rounded-xl text-green-800 font-bold w-full">
+                        太棒了！<br/>你是部落知識王！
+                      </div>
+                    ) : (
+                      <div className="bg-stone-100 px-6 py-4 rounded-xl text-stone-600 font-bold w-full">
+                        別灰心！<br/>再仔細讀一下卡片喔！
+                      </div>
+                    )}
+                  </div>
+
+                  <button onClick={resetAll} className="mt-8 text-stone-400 underline hover:text-stone-600 flex items-center justify-center gap-2 mx-auto">
+                    <RefreshCw size={16}/> 接待下一位
+                  </button>
+                </div>
+              )}
             </div>
+          );
+        };
 
-        </div>
-    </div>
+        // --- Zone C: 名字的奧秘 ---
+        const NamingZone = () => {
+          const [phase, setPhase] = useState('teach');
+          const [slideIdx, setSlideIdx] = useState(0);
+          
+          const slides = [
+            { title: "名字的意義：大自然的連結", icon: "🏔️", content: "原住民的名字常常跟自然有關！\n例如：Cidal (太陽)、Panay (稻穗)、Lokay (鹿)。\n我們相信名字會給孩子大自然的力量。", color: "bg-teal-600" },
+            { title: "親子連名制", icon: "👨‍👩‍👧‍👦", content: "有些族群（如阿美族、泰雅族）的名字後面會加上爸爸或媽媽的名字。\n例如：Kolas (兒子) + Mayaw (爸爸) = Kolas Mayaw。\n這代表我們很重視家族的血脈與傳承。", color: "bg-blue-500" },
+            { title: "生命記憶與階級", icon: "👶", content: "有的名字是紀錄出生時發生的事（如下雨、颱風）。\n在排灣族或魯凱族，有些名字只有貴族或頭目才能使用，代表著特殊的身份與榮耀。", color: "bg-purple-500" }
+          ];
 
-    <!-- 4. 學員介面 -->
-    <div v-if="view === 'client'" class="h-full flex flex-col bg-slate-50">
-        <div class="bg-white p-4 shadow-sm flex justify-between items-center sticky top-0 z-50">
-            <div>
-                <span class="text-[10px] text-slate-400 block uppercase tracking-wider font-bold">Current Task</span>
-                <span class="font-bold text-slate-800 text-lg">{{ modeTitles[mode] }}</span>
+          const fullQuestionBank = [
+             { q: "原住民族的名字和漢人名字有什麼不同？", opts: ["原住民族的名字通常有族語特色", "完全一樣", "都是三個字"], ans: 0 },
+            { q: "原住民族的傳統名字會和什麼有關？", opts: ["自然（山、河流）", "天氣（下雨）", "以上皆是"], ans: 2 },
+            { q: "有些原住民族的名字，後面會加上誰的名字？", opts: ["爸爸或媽媽", "鄰居", "老師"], ans: 0 },
+            { q: "如果名字叫 Panay (稻穗)，可能代表長輩希望他？", opts: ["很愛吃飯", "像稻穗一樣謙虛", "去種田"], ans: 1 },
+            { q: "名字裡有 Cidal (太陽)，通常代表什麼？", opts: ["像太陽一樣溫暖", "怕曬黑", "喜歡夏天"], ans: 0 },
+            { q: "為什麼有些原住民有兩個名字？", opts: ["方便不同場合使用", "想要兩個身份", "名字太長"], ans: 0 },
+            { q: "泰雅族的命名傳統，名字代表什麼？", opts: ["家族血統與傳承", "運動比賽", "新發明"], ans: 0 },
+            { q: "原住民族的名字為什麼這麼重要？", opts: ["代表文化與傳承", "考試比較好寫", "隨便取的"], ans: 0 },
+            { q: "原住民族傳統上怎麼稱呼對方？", opts: ["直接叫名字", "喂！", "只叫綽號"], ans: 0 },
+            { q: "以前有些孩子長大後，會繼承誰的名字？", opts: ["祖父母或父母", "老師", "偶像"], ans: 0 }
+          ];
+
+          const [quizQuestions, setQuizQuestions] = useState([]);
+          const [currentQ, setCurrentQ] = useState(0);
+          const [score, setScore] = useState(0);
+          const [showFeedback, setShowFeedback] = useState(false);
+          const [selectedOpt, setSelectedOpt] = useState(null);
+
+          const nextSlide = () => {
+            if (slideIdx < slides.length - 1) {
+              setSlideIdx(prev => prev + 1);
+            } else {
+              const shuffled = [...fullQuestionBank].sort(() => 0.5 - Math.random());
+              setQuizQuestions(shuffled.slice(0, 3));
+              setPhase('quiz');
+              setCurrentQ(0);
+              setScore(0);
+            }
+          };
+
+          const prevSlide = () => {
+            if (slideIdx > 0) setSlideIdx(prev => prev - 1);
+          };
+
+          const handleAnswer = (optIndex) => {
+            if (showFeedback) return;
+            setSelectedOpt(optIndex);
+            setShowFeedback(true);
+            if (optIndex === quizQuestions[currentQ].ans) {
+              setScore(s => s + 1);
+            }
+            setTimeout(() => {
+              if (currentQ < 2) {
+                setCurrentQ(q => q + 1);
+                setShowFeedback(false);
+                setSelectedOpt(null);
+              } else {
+                setPhase('result');
+              }
+            }, 1500);
+          };
+
+          const restart = () => {
+            setPhase('teach');
+            setSlideIdx(0);
+          };
+
+          return (
+            <div className="flex flex-col items-center justify-center min-h-full bg-violet-50 p-4">
+              <div className="md:absolute md:top-4 md:left-4 mb-4 md:mb-0 bg-violet-600 text-white px-4 py-2 rounded-full font-bold flex items-center gap-2 z-10 shadow">
+                <UserCheck size={20} /> Zone C：名字的奧秘
+              </div>
+
+              {phase === 'teach' && (
+                <div className="w-full max-w-2xl text-center animate-in zoom-in flex flex-col flex-1 py-4 md:py-16">
+                  <div className="bg-white p-8 rounded-3xl shadow-2xl border-4 border-violet-100 flex flex-col justify-center items-center flex-1 min-h-[420px]">
+                    <div className="flex gap-2 mb-6">
+                      {slides.map((_, i) => (
+                        <div key={i} className={`w-3 h-3 rounded-full ${i === slideIdx ? 'bg-violet-600' : 'bg-gray-200'}`} />
+                      ))}
+                    </div>
+                    <div className="text-8xl mb-6">{slides[slideIdx].icon}</div>
+                    <h2 className={`text-2xl md:text-3xl font-black mb-6 ${slides[slideIdx].color} text-white px-6 py-2 rounded-full shadow-md`}>
+                      {slides[slideIdx].title}
+                    </h2>
+                    <div className="text-lg md:text-xl text-gray-600 font-bold leading-relaxed whitespace-pre-line text-left md:text-center w-full">
+                      {slides[slideIdx].content}
+                    </div>
+                  </div>
+                  
+                  <div className="flex justify-between mt-8 gap-4 w-full sticky bottom-0 bg-violet-50 pb-4 md:relative md:bg-transparent md:pb-0">
+                    <button onClick={prevSlide} disabled={slideIdx === 0} className={`flex-1 px-6 py-3 rounded-xl font-bold flex items-center justify-center gap-2 ${slideIdx === 0 ? 'text-gray-300' : 'bg-white text-violet-600 shadow-md hover:bg-violet-50'}`}>
+                      <ChevronLeft /> 上一頁
+                    </button>
+                    <button onClick={nextSlide} className="flex-[2] px-6 py-3 bg-violet-600 text-white rounded-xl font-black text-xl shadow-lg hover:bg-violet-700 flex items-center justify-center gap-2">
+                      {slideIdx === slides.length - 1 ? "開始挑戰！" : "下一頁"} <ChevronRight />
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {phase === 'quiz' && quizQuestions.length > 0 && (
+                <div className="w-full max-w-2xl animate-in slide-in-from-right h-full overflow-y-auto pt-4 pb-20">
+                  <div className="flex justify-between items-center mb-6 px-2">
+                    <span className="text-violet-400 font-bold uppercase tracking-widest">Question {currentQ + 1} / 3</span>
+                    <span className="bg-violet-200 text-violet-800 px-3 py-1 rounded-full font-bold text-sm">Score: {score}</span>
+                  </div>
+                  <div className="bg-white p-8 rounded-3xl shadow-xl border-b-8 border-violet-200 mb-6 min-h-[180px] flex items-center justify-center">
+                    <h3 className="text-2xl font-black text-gray-800 leading-snug text-center">
+                      {quizQuestions[currentQ].q}
+                    </h3>
+                  </div>
+                  <div className="grid gap-4">
+                    {quizQuestions[currentQ].opts.map((opt, i) => (
+                      <button
+                        key={i}
+                        onClick={() => handleAnswer(i)}
+                        disabled={showFeedback}
+                        className={`p-4 rounded-xl font-bold text-lg text-left transition-all border-2 ${
+                          showFeedback 
+                            ? i === quizQuestions[currentQ].ans 
+                              ? 'bg-green-500 text-white border-green-600 scale-105' 
+                              : i === selectedOpt 
+                                ? 'bg-red-500 text-white border-red-600'
+                                : 'bg-gray-100 text-gray-400 border-transparent'
+                            : 'bg-white text-gray-700 border-gray-200 hover:border-violet-400 hover:shadow-md'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-full border-2 border-current flex items-center justify-center text-sm opacity-50">
+                            {String.fromCharCode(65 + i)}
+                          </div>
+                          {opt}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {phase === 'result' && (
+                <div className="animate-in zoom-in bg-white p-10 rounded-3xl shadow-2xl border-4 border-violet-100 text-center max-w-md w-full my-auto">
+                  <div className="text-8xl mb-6">{score === 3 ? '🎉' : '📚'}</div>
+                  <h2 className="text-4xl font-black text-violet-900 mb-4">挑戰結束！</h2>
+                  <p className="text-2xl text-gray-600 mb-8">
+                    你答對了 <span className="text-violet-600 font-bold text-4xl mx-2">{score}</span> 題
+                  </p>
+                  <button onClick={restart} className="text-gray-400 underline hover:text-violet-600 flex items-center justify-center gap-2 mx-auto">
+                    <RefreshCw size={16}/> 重新開始
+                  </button>
+                </div>
+              )}
             </div>
-            <div class="flex items-center bg-green-50 px-3 py-1 rounded-full border border-green-100">
-                <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse mr-2"></span>
-                <span class="text-xs text-green-700 font-bold">ONLINE</span>
-            </div>
-        </div>
+          );
+        };
 
-        <div class="flex-1 p-6 flex flex-col justify-center max-w-md mx-auto w-full">
-            <!-- A. Quiz Buttons -->
-            <div v-if="mode === 'quiz'" class="flex flex-col gap-4 h-full max-h-[500px] justify-center">
-                <button @click="sendAction('A')" class="flex-1 bg-white rounded-3xl shadow-md border-b-4 border-slate-200 active:border-b-0 active:translate-y-1 active:shadow-none transition-all flex flex-col items-center justify-center group relative overflow-hidden">
-                    <div class="absolute inset-0 bg-indigo-50 opacity-0 group-hover:opacity-100 transition"></div>
-                    <span class="text-7xl font-black text-indigo-600 mb-2 relative z-10">A</span>
-                    <span class="text-slate-500 font-bold relative z-10">選項 A</span>
-                </button>
-                <button @click="sendAction('B')" class="flex-1 bg-white rounded-3xl shadow-md border-b-4 border-slate-200 active:border-b-0 active:translate-y-1 active:shadow-none transition-all flex flex-col items-center justify-center group relative overflow-hidden">
-                    <div class="absolute inset-0 bg-purple-50 opacity-0 group-hover:opacity-100 transition"></div>
-                    <span class="text-7xl font-black text-purple-600 mb-2 relative z-10">B</span>
-                    <span class="text-slate-500 font-bold relative z-10">選項 B</span>
-                </button>
-            </div>
+        // --- Zone D: 埋藏的盒子 (點擊即抽獎版 - 包含模擬資料) ---
+        const LotteryZone = () => {
+          const [state, setState] = useState('idle');
+          const [prize, setPrize] = useState(null);
+          const [errorMsg, setErrorMsg] = useState("");
 
-            <!-- B. Tools Buttons -->
-            <div v-if="mode === 'tool'" class="grid grid-cols-2 gap-4 h-auto">
-                <button v-for="tool in tools" :key="tool.id" @click="sendTool(tool)" class="aspect-square bg-white rounded-2xl shadow-sm border border-slate-100 hover:border-indigo-500 active:bg-indigo-50 active:scale-95 transition flex flex-col items-center justify-center p-4">
-                    <span class="text-5xl mb-3">{{ tool.emoji }}</span>
-                    <span class="font-bold text-slate-700 text-sm">{{ tool.name }}</span>
-                </button>
-            </div>
-        </div>
-    </div>
+          // 使用者提供的獎品清單與數量
+          const demoPrizes = [
+            { name: "衛生紙", count: 30, type: "small" },
+            { name: "三合一充電線", count: 15, type: "big" },
+            { name: "滑鼠墊", count: 10, type: "big" },
+            { name: "筆記本", count: 16, type: "small" },
+            { name: "帆布袋", count: 12, type: "big" },
+            { name: "杯墊", count: 20, type: "small" },
+            { name: "扇子", count: 54, type: "small" },
+            { name: "資料夾", count: 44, type: "small" },
+            { name: "聯名包", count: 25, type: "big" },
+            { name: "馬克杯", count: 5, type: "big" },
+          ];
 
-</div>
-
-<script>
-    const { createApp, ref, reactive, computed, nextTick } = Vue;
-
-    // 1. 提示詞 PK 賽題庫 (族語老師版)
-    const quizData = [
-        {
-            q: "Q1：學生老是抱怨「族語羅馬字」好難記，如果想請 AI 幫忙設計一個有趣的記憶口訣或兒歌，哪種講法 AI 比較聽得懂？🤔",
-            options: { A: "「幫我寫一個關於羅馬拼音的歌，要好笑一點。」", B: "「請扮演一位幽默的族語老師，針對『族語羅馬拼音』的 P, T, K 發音規則，創作一首適合國小生朗誦的押韻兒歌，風格要活潑有趣！」" },
-            answer: "B",
-            analysis: "💡 選 (B) 就對了！給 AI 一個「幽默老師」的人設，加上明確的「教學目標」(P,T,K) 和「對象」(國小生)，它才會吐出真正能用的東西！"
-        },
-        {
-            q: "Q2：要教「身體部位」的單字了！想做一張圖文並茂的單字表發給學生，怎麼叫 AI 幫我排版最快？📋",
-            options: { A: "「幫我把頭、眼睛、鼻子的族語列出來，弄成表格。」", B: "「請製作一個 HTML 表格，第一欄是『中文』，第二欄是『族語羅馬字』(請留空讓我填)，第三欄是『圖像建議』，請列出頭、眼睛、鼻子等常用部位。」" },
-            answer: "B",
-            analysis: "💡 選 (B)！直接指定「HTML 表格」格式，AI 產出來的可以直接貼到 Word 或 Excel，而且預留欄位讓你填入正確的族語，不怕 AI 亂翻譯！"
-        },
-        {
-            q: "Q3：想做一個「翻牌配對」的小遊戲網頁，讓學生下課可以玩，該怎麼跟 AI 工程師許願？🎮",
-            options: { A: "「寫一個網頁遊戲，可以翻牌子學族語。」", B: "「請提供一個單一檔案的 HTML/CSS/JS 代碼，製作一個『翻牌記憶遊戲』。卡片正面是『族語單字』，背面是『中文意思』，配對成功要顯示『Lokah!』的鼓勵訊息。」" },
-            answer: "B",
-            analysis: "💡 選 (B) 才是專業的！明確說出「單一檔案」、「遊戲規則」和「獎勵機制」(Lokah!)，AI 才能寫出真正能跑的程式碼喔！"
-        },
-        {
-            q: "Q4：網頁做好了，但看起來白白的很無聊...想加一點「原住民風味」，怎麼改比較有感？🎨",
-            options: { A: "「把它變漂亮一點，要有原住民的感覺。」", B: "「請修改 CSS 樣式，將背景色改為泰雅族傳統服飾的『紅色與白色』配色，並在標題周圍加入『菱形圖騰』的裝飾元素。」" },
-            answer: "B",
-            analysis: "💡 選 (B)！AI 不懂什麼是「感覺」，但它懂「紅色、白色」和「菱形圖騰」！指令越具體，視覺效果越精準！"
-        },
-        {
-            q: "Q5：最後一步！要把做好的網頁變成網址傳到家長群組，怎麼說最省事？🔗",
-            options: { A: "「代碼給我，我要傳給別人。」", B: "「請確認這是一個完整的 HTML 檔案，不需要額外安裝任何軟體就能在瀏覽器開啟。並教我如何將它上傳到免費空間 (如 GitHub Pages)。」" },
-            answer: "B",
-            analysis: "💡 選 (B)！確保是「完整檔案」且「免安裝」，這樣我們族語老師才能輕鬆操作，不用當工程師也能有自己的教學網頁！"
-        }
-    ];
-
-    // 2. AI 工具箱題庫 (族語老師版)
-    const toolData = [
-        {
-            q: "Q1：講到「射日傳說」的時候，學生都快睡著了...😫 如果想馬上生出一張「勇士背著弓箭走在山稜線上」的超帥插圖吸住他們眼球，要按哪個鍵？",
-            answerId: 2,
-            analysis: "💡 快按【生成教材圖】！用 Midjourney 或 Bing，只要輸入描述，幾秒鐘就能把傳說故事變成電影海報，學生絕對醒過來！"
-        },
-        {
-            q: "Q2：下禮拜要交「學期教學計畫」了，可是腦袋一片空白...🤯 有沒有人可以幫我先擬一個「每週進度表」的草稿，讓我再來修改？",
-            answerId: 1,
-            analysis: "💡 救星就是【撰寫教案】！叫 ChatGPT 幫你先列出 18 週的架構，包含主題、活動、評量，你再填入族語內容，省下一半時間！"
-        },
-        {
-            q: "Q3：班上學生太害羞，不敢開口說族語...😔 如果想做一個「虛擬 Vuvu (阿嬤)」讓學生可以跟她無壓力地練習「問候」和「自我介紹」，該找誰？",
-            answerId: 3,
-            analysis: "💡【模擬對話】是你的好朋友！設定 ChatGPT 扮演慈祥的 Vuvu，讓學生跟它打字或語音聊天，練膽量最適合！"
-        },
-        {
-            q: "Q4：剛教完「數字 1-10」，想馬上出一張「連連看」或「選擇題」的小考卷給學生測驗，但不想自己打字打半天...✍️",
-            answerId: 4,
-            analysis: "💡 用【自動出題】就對了！把你的單字表貼給 AI，叫它「出 5 題選擇題，附上解答」，考卷馬上生出來！"
-        },
-        {
-            q: "Q5：想要做一張超酷的「族語夏令營」招生海報，需要一個「穿著傳統服飾、手牽手跳舞」的歡樂背景圖，該用哪個？🖼️",
-            answerId: 2,
-            analysis: "💡 只要是「找圖片、畫圖片」，一律找【生成教材圖】！AI 畫出來的圖騰和服飾細節雖然不一定 100% 正確，但拿來當氣氛圖超好用！"
-        }
-    ];
-
-    createApp({
-        setup() {
-            const view = ref('home');
-            const mode = ref('quiz'); 
-            const myId = ref(''); 
-            const displayId = ref(''); 
-            const targetId = ref(''); 
-            const connectionCount = ref(0);
-            const showStats = ref(false);
-            const currentQIndex = ref(0);
-            const currentToolQIndex = ref(0);
-            
-            // Password Modal State
-            const showPasswordModal = ref(false);
-            const passwordInput = ref('');
-            const loginError = ref(false);
-            
-            const quizVotes = reactive(new Map());
-            const toolVotes = reactive(new Map());
-
-            const tools = [
-                { id: 1, name: '撰寫教案', emoji: '📝', desc: 'ChatGPT: 產生 10 分鐘微課程計畫', color: 'text-indigo-600' },
-                { id: 2, name: '生成教材圖', emoji: '🎨', desc: 'Midjourney/Bing: 繪製在地傳說場景', color: 'text-purple-600' },
-                { id: 3, name: '模擬對話', emoji: '🗣️', desc: 'ChatGPT: 扮演在地長輩與學生練習', color: 'text-green-600' },
-                { id: 4, name: '自動出題', emoji: '✅', desc: 'ChatGPT: 根據課文產生 5 題選擇題', color: 'text-orange-600' }
-            ];
-            
-            let peer = null;
-            let conn = null;
-            let connections = [];
-
-            const modeTitles = {
-                'quiz': '⚖️ 提示詞 PK 賽',
-                'tool': '🧰 AI 工具箱'
-            };
-            
-            const shareUrl = computed(() => {
-                const url = window.location.href.split('?')[0];
-                return `${url}`; 
-            });
-
-            // --- Stats ---
-            const quizStats = computed(() => {
-                const stats = { A: 0, B: 0 };
-                quizVotes.forEach((choice) => { if (stats[choice] !== undefined) stats[choice]++; });
-                return stats;
-            });
-            const getQuizPercent = (option) => {
-                const total = quizVotes.size;
-                return total === 0 ? 0 : (quizStats.value[option] / total) * 100;
-            };
-            const toolStats = computed(() => {
-                const stats = {};
-                tools.forEach(t => stats[t.id] = 0);
-                toolVotes.forEach((toolId) => { if (stats[toolId] !== undefined) stats[toolId]++; });
-                return stats;
-            });
-            const getToolPercent = (id) => {
-                const total = toolVotes.size;
-                return total === 0 ? 0 : (toolStats.value[id] / total) * 100;
-            };
-
-            // --- Password Modal Logic ---
-            const openPasswordModal = () => {
-                showPasswordModal.value = true;
-                loginError.value = false;
-                passwordInput.value = '';
-                nextTick(() => { document.querySelector('input[type="password"]')?.focus(); });
-            };
-
-            const checkPassword = () => {
-                if (passwordInput.value !== '1234') {
-                    loginError.value = true;
-                    passwordInput.value = '';
-                    return;
-                }
-                showPasswordModal.value = false;
-                initAdmin();
-            };
-
-            // --- Admin Init ---
-            const initAdmin = () => {
-                const randomId = Math.floor(1000 + Math.random() * 9000);
-                displayId.value = randomId.toString();
-                const fullId = 'AI-Teacher-' + randomId;
-                
-                myId.value = fullId;
-                peer = new Peer(fullId);
-                
-                peer.on('open', (id) => { view.value = 'admin'; });
-                peer.on('connection', (c) => {
-                    connections.push(c);
-                    connectionCount.value++;
-                    setTimeout(() => { c.send({ type: 'MODE', payload: mode.value }); }, 500);
-                    c.on('data', (data) => { handleData(data, c.peer); });
-                    c.on('close', () => { connectionCount.value--; });
+          const drawPrize = async () => {
+            if (state === 'drawing') return;
+            setState('drawing');
+            setErrorMsg("");
+            try {
+              if (GAS_API_URL && GAS_API_URL !== "https://script.google.com/macros/s/AKfycbzCJVchaq7JMq1SJvNNNHzj1ojJDgmcffgoscCnrN5lx32_RvAzy1NSQT-VJWLush4/exec") {
+                // 如果有設定真實後台網址，嘗試連線
+                const timestamp = new Date().getTime();
+                const response = await fetch(`${GAS_API_URL}?action=draw&t=${timestamp}`, {
+                  method: "GET",
+                  mode: 'cors',
+                  credentials: 'omit',
+                  redirect: 'follow',
+                  headers: { "Content-Type": "text/plain;charset=utf-8" },
                 });
-            };
-
-            const connectToAdmin = () => {
-                if(!targetId.value) return;
-                let inputId = targetId.value.trim();
-                let fullId = 'AI-Teacher-' + inputId;
-                peer = new Peer(); 
-                peer.on('open', () => {
-                    conn = peer.connect(fullId);
-                    conn.on('open', () => { view.value = 'client'; });
-                    conn.on('data', (data) => {
-                        if(data.type === 'MODE') {
-                            mode.value = data.payload;
-                            currentTool.value = null; 
-                        }
-                    });
-                    conn.on('error', (err) => alert('找不到房間 ID'));
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                const data = await response.json();
+                if (data.error === "No prizes left!") {
+                   setPrize(data.prize || { name: "銘謝惠顧", type: "none" });
+                   setState('result');
+                   return; 
+                }
+                if (data.error) throw new Error(data.error);
+                setPrize(data.prize);
+              } else {
+                // 模擬抽獎模式 (依照數量加權)
+                await new Promise(r => setTimeout(r, 1500));
+                
+                // 建立加權池
+                let weightedPool = [];
+                demoPrizes.forEach(p => {
+                    for(let i=0; i<p.count; i++) weightedPool.push(p);
                 });
-            };
+                
+                const randomPrize = weightedPool[Math.floor(Math.random() * weightedPool.length)];
+                setPrize(randomPrize);
+              }
+              setState('result');
+            } catch (err) {
+              console.error(err);
+              setErrorMsg(err.message);
+              // 連線失敗時切換到備用抽獎
+              const randomPrize = demoPrizes[Math.floor(Math.random() * demoPrizes.length)];
+              setPrize(randomPrize);
+              setState('result');
+            }
+          };
 
-            const handleData = (data, peerId) => {
-                if(data.type === 'ACTION') {
-                    if (peerId) quizVotes.set(peerId, data.payload);
-                }
-                if(data.type === 'TOOL') {
-                    if (peerId) toolVotes.set(peerId, data.payload.id);
-                }
-            };
+          const reset = () => { 
+            setState('idle'); 
+            setPrize(null);
+          };
 
-            const setMode = (m) => {
-                mode.value = m;
-                connections.forEach(c => c.send({ type: 'MODE', payload: m }));
-                showStats.value = false; 
-            };
+          return (
+            <div className="flex flex-col items-center justify-center h-full bg-indigo-900 p-4 relative overflow-hidden">
+              <div className="absolute top-4 left-4 bg-indigo-500 text-white px-4 py-2 rounded-full font-bold flex items-center gap-2 border border-indigo-400 z-10">
+                <Gift size={20} /> Zone D：埋藏的盒子
+              </div>
+              <div className="z-10 w-full max-w-lg text-center">
+                {state === 'idle' && (
+                  <div className="animate-in zoom-in">
+                    <div className="text-6xl mb-8 animate-bounce">📦</div>
+                    <h2 className="text-3xl font-black text-white mb-4">我們找到盒子了！</h2>
+                    <button onClick={drawPrize} className="px-12 py-6 bg-yellow-500 text-yellow-900 text-3xl font-black rounded-full shadow-lg hover:scale-105 transition-transform active:scale-95">打開盒子</button>
+                    {errorMsg && <div className="mt-4 text-red-300 text-sm">連線異常，已切換至備用模式</div>}
+                  </div>
+                )}
+                {state === 'drawing' && <div className="text-white text-2xl font-bold animate-pulse">解鎖中...</div>}
+                {state === 'result' && prize && (
+                  <div className="bg-white p-10 rounded-3xl shadow-2xl animate-in zoom-in transform rotate-1">
+                     <div className="text-8xl mb-4">{prize.type === 'big' ? '🏆' : '🍬'}</div>
+                     <h3 className="text-indigo-400 font-bold uppercase tracking-widest mb-2">獲得信物</h3>
+                     <h2 className="text-4xl font-black text-indigo-600 mb-4">{prize.name}</h2>
+                     <button onClick={reset} className="text-gray-400 underline">再試一次</button>
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        };
 
-            const clearVotes = () => {
-                quizVotes.clear();
-                toolVotes.clear();
-                showStats.value = false;
-            };
+        // --- 主框架 ---
+        function InteractiveApp() {
+          const [activeZone, setActiveZone] = useState('A');
 
-            const prevQuestion = () => {
-                if (currentQIndex.value > 0) {
-                    currentQIndex.value--;
-                    clearVotes();
-                }
-            };
-            const nextQuestion = () => {
-                if (currentQIndex.value < quizData.length - 1) {
-                    currentQIndex.value++;
-                    clearVotes();
-                }
-            };
-
-            const prevToolQuestion = () => {
-                if (currentToolQIndex.value > 0) {
-                    currentToolQIndex.value--;
-                    clearVotes();
-                }
-            };
-            const nextToolQuestion = () => {
-                if (currentToolQIndex.value < toolData.length - 1) {
-                    currentToolQIndex.value++;
-                    clearVotes();
-                }
-            };
-
-            const sendAction = (choice) => {
-                if(conn) conn.send({ type: 'ACTION', payload: choice });
-                if (navigator.vibrate) navigator.vibrate(50);
-            };
-            const sendTool = (tool) => {
-                if(conn) conn.send({ type: 'TOOL', payload: tool });
-                if (navigator.vibrate) navigator.vibrate(50);
-            };
-
-            return {
-                view, mode, myId, displayId, targetId, connectionCount, shareUrl,
-                initAdmin, connectToAdmin,
-                modeTitles, tools,
-                setMode, sendAction, sendTool,
-                showStats, quizStats, toolStats, getQuizPercent, getToolPercent, clearVotes,
-                quizData, currentQIndex, prevQuestion, nextQuestion,
-                toolData, currentToolQIndex, prevToolQuestion, nextToolQuestion,
-                showPasswordModal, passwordInput, loginError, openPasswordModal, checkPassword
-            };
+          return (
+            <div className="flex w-full h-[100dvh] bg-stone-900 font-sans text-gray-800 overflow-hidden select-none">
+              <div className="w-16 md:w-64 bg-stone-800 h-full flex flex-col shadow-2xl z-20 border-r border-stone-700">
+                <div className="p-2 md:p-6 bg-stone-900 border-b border-stone-700 flex flex-col items-center md:items-start">
+                  <h1 className="text-white font-black text-xl flex flex-col md:flex-row items-center gap-2">
+                    <Map className="text-amber-500" />
+                    <span className="hidden md:inline">2026世界母語日</span>
+                  </h1>
+                  <span className="hidden md:block text-sm text-amber-500 font-bold mt-1">makila kuman</span>
+                </div>
+                <div className="flex-1 py-4 space-y-2 overflow-y-auto no-scrollbar">
+                  <NavBtn id="A" title="原住民文化知識通" icon={BookOpen} active={activeZone === 'A'} onClick={() => setActiveZone('A')} color="text-amber-400" />
+                  <NavBtn id="B" title="卡片解密測驗" icon={Edit3} active={activeZone === 'B'} onClick={() => setActiveZone('B')} color="text-sky-400" />
+                  <NavBtn id="C" title="名字的奧秘" icon={UserCheck} active={activeZone === 'C'} onClick={() => setActiveZone('C')} color="text-violet-400" />
+                  <div className="my-2 border-t border-stone-700 mx-2 md:mx-4"></div>
+                  <NavBtn id="D" title="埋藏的盒子" icon={Gift} active={activeZone === 'D'} onClick={() => setActiveZone('D')} color="text-indigo-400" />
+                </div>
+              </div>
+              {/* 加入 overflow-hidden 並讓子元素處理滾動，或直接 overflow-y-auto */}
+              <div className="flex-1 h-full relative bg-stone-100 overflow-y-auto no-scrollbar">
+                {activeZone === 'A' && <TribeIntroZone />}
+                {activeZone === 'B' && <TribeQuizZone />}
+                {activeZone === 'C' && <NamingZone />}
+                {activeZone === 'D' && <LotteryZone />}
+              </div>
+            </div>
+          );
         }
-    }).mount('#app');
-</script>
+
+        const NavBtn = ({ id, title, icon: Icon, active, onClick, color }) => (
+          <button onClick={onClick} className={`w-full p-3 md:p-4 flex flex-col md:flex-row items-center gap-1 md:gap-4 transition-all relative group ${active ? 'bg-stone-700' : 'hover:bg-stone-700/50'}`}>
+            <div className={`p-2 rounded-lg ${active ? 'bg-stone-900' : 'bg-stone-800 group-hover:bg-stone-900'}`}><Icon className={color} size={24} /></div>
+            <div className={`text-center md:text-left text-xs md:text-base font-bold ${active ? 'text-white' : 'text-stone-400 hidden md:block'}`}>{title}</div>
+            {active && <div className={`absolute left-0 top-0 bottom-0 w-1 ${color.replace('text', 'bg')}`} />}
+          </button>
+        );
+
+        // 渲染到頁面
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<InteractiveApp />);
+    </script>
 </body>
 </html>
