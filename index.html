@@ -1,731 +1,427 @@
-<!DOCTYPE html>
-<html lang="zh-TW">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>2026世界母語日 - makila kuman</title>
-    
-    <!-- 載入 Tailwind CSS (樣式庫) -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- 載入 Babel (讓瀏覽器可以看懂 React JSX) -->
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>擺攤抽獎系統</title>
+    <style>:root {
+  color-scheme: light;
+  --ink: #172126;
+  --muted: #66727a;
+  --line: #d7dedb;
+  --paper: #fffdf8;
+  --panel: #ffffff;
+  --green: #23745a;
+  --yellow: #f0bd35;
+  --red: #d9564a;
+  --blue: #256a8a;
+}
 
-    <style>
-        /* 錯誤時的震動動畫 */
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-5px); }
-            75% { transform: translateX(5px); }
-        }
-        .shake {
-            animation: shake 0.3s ease-in-out;
-        }
+* {
+  box-sizing: border-box;
+}
 
-        /* 隱藏滾動條但保持功能 */
-        .no-scrollbar::-webkit-scrollbar {
-            display: none;
-        }
-        .no-scrollbar {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-        }
-    </style>
-</head>
-<body class="bg-stone-900 m-0 p-0 overflow-hidden">
-    <div id="root"></div>
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: "Microsoft JhengHei", "Noto Sans TC", Arial, sans-serif;
+  color: var(--ink);
+  background:
+    linear-gradient(135deg, rgba(35, 116, 90, 0.13), transparent 35%),
+    linear-gradient(315deg, rgba(240, 189, 53, 0.18), transparent 40%),
+    var(--paper);
+}
 
-    <script type="text/babel" data-type="module">
-        import React, { useState, useEffect, useRef } from 'https://esm.sh/react@18.2.0';
-        import ReactDOM from 'https://esm.sh/react-dom@18.2.0/client';
-        import { 
-          BookOpen, Edit3, Gift, UserCheck, ArrowRight, ArrowLeft,
-          ThumbsUp, MapPin, Lock, Delete, LogIn, CreditCard, CheckCircle2, Check, RefreshCw, Map, ChevronLeft, ChevronRight
-        } from 'https://esm.sh/lucide-react@0.263.1';
+button,
+input {
+  font: inherit;
+}
 
-        // ==========================================
-        // CONFIGURATION (設定區)
-        // ==========================================
-        // 如果您之後要用 Google Sheet 當後台，請把網址填在這裡
-        // 如果保持空字串或網址錯誤，系統會自動使用下方的 demoPrizes 進行模擬抽獎
-        const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzCJVchaq7JMq1SJvNNNHzj1ojJDgmcffgoscCnrN5lx32_RvAzy1NSQT-VJWLush4/exec";
+button {
+  border: 0;
+  cursor: pointer;
+  border-radius: 8px;
+  min-height: 44px;
+  padding: 0 18px;
+  font-weight: 800;
+}
 
-        // ==========================================
-        // ZONE COMPONENTS
-        // ==========================================
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
 
-        // --- Zone A: 原住民文化知識通 ---
-        const TribeIntroZone = () => {
-          const allTribes = [
-            { title: "阿美族 (Amis)", region: "東部/花蓮台東", subtitle: "豐年祭 (Ilisin)", content: "人口最多。豐年祭包含軍事與教育功能，是族人命脈根源。", icon: "🌾", color: "bg-red-500" },
-            { title: "排灣族 (Paiwan)", region: "南部/屏東台東", subtitle: "收穫祭 (Masalut)", content: "有嚴謹階級制度。小米收穫祭 Masalut 代表「跨越」新年。", icon: "🐍", color: "bg-slate-700" },
-            { title: "泰雅族 (Atayal)", region: "北部/中部山區", subtitle: "祖靈祭 (Maho)", content: "重視織布與文面。祖靈祭透過呼喚祖靈祈求平安。", icon: "🌈", color: "bg-red-700" },
-            { title: "布農族 (Bunun)", region: "中央山脈/南投", subtitle: "射耳祭 (Malahodaigian)", content: "相信精靈(Hanitu)。射耳祭訓練小孩狩獵，獲得社會認同。", icon: "🏹", color: "bg-amber-600" },
-            { title: "卑南族 (Puyuma)", region: "東部/台東平原", subtitle: "年祭 (猴祭/大獵祭)", content: "有嚴謹的年齡階級與會所制度。年祭包含猴祭與大獵祭。", icon: "🐒", color: "bg-yellow-600" },
-            { title: "魯凱族 (Rukai)", region: "南部/屏東高雄", subtitle: "百合花與盪鞦韆", content: "以百合花為族花。婚禮時會舉行盪鞦韆活動，分享喜悅。", icon: "🌺", color: "bg-emerald-600" },
-            { title: "鄒族 (Tsou)", region: "中部/嘉義阿里山", subtitle: "戰祭 (Mayasvi)", content: "祭拜天神與戰神。在庫巴(Kuba)男子會所舉行，祈禱勝利。", icon: "🔥", color: "bg-red-600" },
-            { title: "賽夏族 (Saisiyat)", region: "北部/新竹苗栗", subtitle: "矮靈祭 (Pasta'ay)", content: "每兩年舉辦一次，為了紀念並安撫教會他們農耕的矮人靈魂。", icon: "🌑", color: "bg-indigo-700" },
-            { title: "達悟族 (Tao)", region: "離島/蘭嶼", subtitle: "飛魚祭", content: "唯一的海洋民族。隨黑潮舉行招魚祭，有嚴格的生態規範。", icon: "🐟", color: "bg-blue-500" },
-            { title: "邵族 (Thao)", region: "中部/南投日月潭", subtitle: "祖靈籃與杵音", content: "供奉祖靈籃(Ulalaluan)。杵音音樂聞名，農曆八月過年。", icon: "🌊", color: "bg-amber-700" },
-            { title: "噶瑪蘭族 (Kavalan)", region: "東部/花蓮", subtitle: "海祭與香蕉絲", content: "保有獨特香蕉絲編織。春夏間舉行海祭，感謝海洋賜食。", icon: "🍌", color: "bg-yellow-700" },
-            { title: "太魯閣族 (Truku)", region: "東部/花蓮山區", subtitle: "彩虹橋傳說", content: "重視織布與文面。死後要通過彩虹橋(Hakaw Utux)見祖靈。", icon: "🌉", color: "bg-teal-600" },
-            { title: "撒奇萊雅族 (Sakizaya)", region: "東部/花蓮", subtitle: "火神祭 (Palamal)", content: "曾隱身阿美族百年。火神祭紀念祖先，包含繞境儀式。", icon: "🔥", color: "bg-orange-700" },
-            { title: "賽德克族 (Seediq)", region: "中部/南投花蓮", subtitle: "崇信 Utux", content: "平權社會。祭儀重點在祈求族運與 Utux (神/祖靈) 的庇佑。", icon: "⚔️", color: "bg-red-800" },
-            { title: "拉阿魯哇族 (Hla'alua)", region: "南部/高雄桃源", subtitle: "聖貝祭 (Miatungusu)", content: "注重農耕祭儀。祭祀 12 位貝神，是主要的圖騰象徵。", icon: "🐚", color: "bg-cyan-600" },
-            { title: "卡那卡那富族 (Kanakanavu)", region: "南部/高雄那瑪夏", subtitle: "米貢祭 (Mikong)", content: "重要祭儀有米貢祭與河祭。傳統狩獵方式包含帶狗與陷阱。", icon: "🐕", color: "bg-lime-600" },
-          ];
+.app {
+  width: min(1180px, calc(100% - 28px));
+  margin: 0 auto;
+  padding: 28px 0;
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: 18px;
+}
 
-          const [cards, setCards] = useState([]);
-          const [idx, setIdx] = useState(0);
-          const [isFinished, setIsFinished] = useState(false);
+.status-bar {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.86);
+  color: var(--muted);
+  font-weight: 800;
+}
 
-          useEffect(() => {
-            restart();
-          }, []);
+#modeBadge {
+  color: var(--green);
+}
 
-          const restart = () => {
-            const shuffled = [...allTribes].sort(() => 0.5 - Math.random());
-            setCards(shuffled.slice(0, 10));
-            setIdx(0);
-            setIsFinished(false);
-          };
+.draw-panel,
+.inventory-panel,
+.history-panel {
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: 0 18px 50px rgba(23, 33, 38, 0.09);
+}
 
-          const handleNext = () => {
-            if (idx < cards.length - 1) {
-              setIdx(prev => prev + 1);
-            } else {
-              setIsFinished(true);
-            }
-          };
+.draw-panel {
+  min-height: 640px;
+  padding: 30px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  grid-row: span 2;
+}
 
-          const handlePrev = () => {
-            if (idx > 0) {
-              setIdx(prev => prev - 1);
-            }
-          };
+.brand p,
+.panel-title p {
+  margin: 0 0 6px;
+  color: var(--green);
+  font-weight: 800;
+}
 
-          if (cards.length === 0) return null;
+.brand h1 {
+  margin: 0;
+  font-size: clamp(38px, 8vw, 86px);
+  line-height: 1;
+}
 
-          return (
-            <div className="flex flex-col items-center justify-center min-h-full bg-stone-100 p-4">
-              <div className="md:absolute md:top-4 md:left-4 mb-4 md:mb-0 bg-stone-800 text-white px-4 py-2 rounded-full font-bold flex items-center gap-2 z-10 shadow-lg">
-                <BookOpen size={20} /> Zone A：原住民文化知識通
-              </div>
+.winner-box {
+  margin: 34px 0;
+  min-height: 245px;
+  border: 2px solid #1f2b30;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  padding: 28px;
+  background: #fff6d9;
+}
 
-              {!isFinished ? (
-                <div className="flex flex-col items-center justify-center w-full max-w-6xl flex-1 py-4 md:py-16">
-                  
-                  {/* 大版面設計 */}
-                  <div className="w-full bg-white rounded-[2rem] shadow-2xl overflow-hidden flex flex-col md:flex-row border border-stone-200 animate-in zoom-in duration-300 md:min-h-[600px] h-auto">
-                    
-                    {/* 左側 */}
-                    <div className={`${cards[idx].color} w-full md:w-2/5 p-8 md:p-12 flex flex-col justify-center items-center text-white relative transition-colors duration-500 min-h-[300px] md:h-auto`}>
-                       <div className="absolute top-0 left-0 w-full h-full overflow-hidden opacity-10 pointer-events-none">
-                         <div className="absolute -top-10 -left-10 w-40 h-40 rounded-full bg-white"></div>
-                         <div className="absolute bottom-10 right-10 w-20 h-20 rounded-full bg-white"></div>
-                       </div>
-                       
-                       <div className="text-sm font-bold bg-black/20 px-3 py-1 rounded-full mb-4 flex items-center gap-2">
-                          <MapPin size={14}/> {cards[idx].region}
-                       </div>
-                       
-                       <h2 className="text-4xl md:text-5xl lg:text-6xl font-black mb-4 text-center leading-tight tracking-tight drop-shadow-sm">
-                         {cards[idx].title}
-                       </h2>
-                       
-                       <div className="mt-4 bg-white/20 backdrop-blur-md px-4 py-2 md:px-6 rounded-xl text-lg md:text-xl font-bold border border-white/40 shadow-lg text-center">
-                          {cards[idx].subtitle}
-                       </div>
+.winner-box span {
+  color: var(--blue);
+  font-weight: 900;
+}
 
-                       <div className="absolute bottom-4 left-0 w-full text-center text-white/50 font-mono text-sm">
-                         {idx + 1} / {cards.length}
-                       </div>
-                    </div>
+.winner-box strong {
+  display: block;
+  width: 100%;
+  overflow-wrap: anywhere;
+  font-size: clamp(36px, 8vw, 88px);
+  line-height: 1.05;
+}
 
-                    {/* 右側 */}
-                    <div className="w-full md:w-3/5 p-6 md:p-16 flex flex-col justify-between bg-white relative">
-                      <div className="mb-4 md:mb-auto">
-                        <span className="text-stone-400 font-bold tracking-widest text-sm uppercase">CULTURE NOTE</span>
-                        <h3 className="text-2xl md:text-3xl font-black text-stone-800 mt-2 mb-4 md:mb-6 border-l-8 border-stone-800 pl-4">
-                          文化小知識
-                        </h3>
-                        <p className="text-xl md:text-3xl text-stone-600 font-bold leading-relaxed text-justify">
-                          {cards[idx].content}
-                        </p>
-                      </div>
+.actions,
+.dialog-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
 
-                      <div className="mt-8 pt-8 border-t border-stone-100 flex flex-col md:flex-row gap-4">
-                         <button 
-                            onClick={handlePrev}
-                            disabled={idx === 0}
-                            className={`px-6 py-4 rounded-xl font-bold flex items-center justify-center gap-2 transition-all order-2 md:order-1 ${
-                              idx === 0 
-                                ? 'bg-stone-100 text-stone-300 cursor-not-allowed' 
-                                : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
-                            }`}
-                          >
-                            <ArrowLeft size={24}/> <span className="md:hidden">上一個</span>
-                          </button>
-                          
-                          <button 
-                            onClick={handleNext}
-                            className="flex-1 px-8 py-4 bg-stone-800 text-white rounded-xl font-bold text-xl shadow-xl hover:bg-stone-700 active:scale-95 transition-all flex items-center justify-center gap-3 order-1 md:order-2"
-                          >
-                            {idx === cards.length - 1 ? "完成學習" : "我知道了"} <ArrowRight size={24}/>
-                          </button>
-                      </div>
-                    </div>
-                  </div>
+.primary {
+  background: var(--green);
+  color: white;
+}
 
-                </div>
-              ) : (
-                <div className="w-full max-w-lg text-center animate-in zoom-in py-20">
-                  <div className="text-8xl mb-6">🎓</div>
-                  <h2 className="text-4xl font-black text-stone-800 mb-4">學習完成！</h2>
-                  <p className="text-xl text-stone-600 mb-8 font-bold">你已經看完了 10 個族群的知識。<br/>準備好接受隨堂考了嗎？</p>
-                  <div className="flex flex-col md:flex-row gap-4 justify-center p-4">
-                    <button onClick={restart} className="px-6 py-3 bg-white text-stone-500 rounded-xl font-bold shadow-md hover:bg-stone-50">
-                      再複習一次
-                    </button>
-                    <div className="px-6 py-3 bg-amber-500 text-white rounded-xl font-bold shadow-md animate-bounce text-center">
-                      請前往 Zone B 考試！👇
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          );
-        };
+.secondary {
+  background: #edf2ef;
+  color: var(--ink);
+  border: 1px solid var(--line);
+}
 
-        // --- Zone B: 卡片解密測驗 ---
-        const TribeQuizZone = () => {
-          const [phase, setPhase] = useState('select'); 
-          const [selectedCards, setSelectedCards] = useState([]); 
-          const [currentCardIdx, setCurrentCardIdx] = useState(0); 
-          const [isAnswered, setIsAnswered] = useState(false);
-          const [isCorrect, setIsCorrect] = useState(false);
-          const [score, setScore] = useState(0);
-          
-          const TARGET_COUNT = 2;
+.small {
+  min-height: 38px;
+  padding: 0 12px;
+}
 
-          const cardData = [
-            { id: 1, title: "原住民族", q: "台灣原住民族目前官方認定共有幾族？", options: ["9族", "14族", "16族"], ans: 2 },
-            { id: 2, title: "祭典的意義", q: "原住民舉辦祭典的主要意義是什麼？", options: ["單純聚餐", "表達對天地鬼神的崇敬", "運動競技比賽"], ans: 1 },
-            { id: 3, title: "阿美族", q: "阿美族最盛大的祭典「豐年祭」通常在什麼時候舉辦？", options: ["春節期間", "7月中旬至9月初", "12月寒冬"], ans: 1 },
-            { id: 4, title: "排灣族", q: "排灣族的「Masalut」祭典中，「Salut」這個字代表什麼意思？", options: ["跨越/邁向新年", "豐收", "打獵"], ans: 0 },
-            { id: 5, title: "泰雅族", q: "泰雅族最重要的信仰中心是什麼？", options: ["太陽神", "祖靈 (Utux)", "百步蛇"], ans: 1 },
-            { id: 6, title: "布農族", q: "布農族的「射耳祭」除了祭祀，還有什麼重要功能？", options: ["訓練小孩狩獵與成長", "尋找結婚對象", "祈求下雨"], ans: 0 },
-            { id: 7, title: "太魯閣族", q: "太魯閣族擅長的工藝除了藤編，還有什麼？", options: ["陶壺製作", "彩虹般的織布", "造船"], ans: 1 },
-            { id: 8, title: "卑南族", q: "卑南族盛大的「年祭」中，包含了哪兩個重要活動？", options: ["猴祭與大獵祭", "飛魚祭與海祭", "戰祭與小米祭"], ans: 0 },
-            { id: 9, title: "魯凱族", q: "魯凱族在婚禮或祭典中，常會舉辦什麼浪漫的活動？", options: ["盪鞦韆", "賽跑", "射箭"], ans: 0 },
-            { id: 10, title: "賽德克族", q: "賽德克族除了女子織布外，男子擅長什麼工藝？", options: ["編籃及籐帽", "製作琉璃珠", "雕刻石板"], ans: 0 },
-            { id: 11, title: "鄒族", q: "鄒族的「凱旋祭 (Mayasvi)」主要是祭拜哪位神祇？", options: ["海神", "天神與戰神", "農神"], ans: 1 },
-            { id: 12, title: "賽夏族", q: "賽夏族的「矮靈祭 (Pasta'ay)」是為了紀念誰？", options: ["達隘 (矮人)", "祖先", "巨人"], ans: 0 },
-            { id: 13, title: "雅美族(達悟族)", q: "雅美族(達悟族)最重要的生態文化與什麼有關？", options: ["山豬", "飛魚", "百合花"], ans: 1 },
-            { id: 14, title: "噶瑪蘭族", q: "噶瑪蘭族保有哪項非常有特色的工藝技術？", options: ["編織香蕉絲", "製作陶壺", "皮雕"], ans: 0 },
-            { id: 15, title: "撒奇萊雅族", q: "撒奇萊雅族的「火神祭 (Palamal)」是為了紀念什麼？", options: ["族群重生與祖先", "豐收", "成年禮"], ans: 0 },
-            { id: 16, title: "邵族", q: "邵族家家戶戶供奉什麼來象徵祖靈？", options: ["祖靈籃 (Ulalaluan)", "陶壺", "百步蛇紋"], ans: 0 },
-            { id: 17, title: "拉阿魯哇族", q: "拉阿魯哇族的「聖貝祭」祭祀的對象是？", options: ["太陽神", "12位貝神", "山神"], ans: 1 },
-            { id: 18, title: "卡那卡那富族", q: "卡那卡那富族的重要祭儀「米貢祭」主要感謝什麼？", options: ["小米豐收", "獵物豐收", "戰鬥勝利"], ans: 0 },
-            { id: 19, title: "正名之路", q: "哪兩個族群在 2014 年終於正名成功？", options: ["邵族與噶瑪蘭族", "拉阿魯哇族與卡那卡那富族", "賽德克族與太魯閣族"], ans: 1 },
-            { id: 20, title: "探索台灣之美", q: "卡片中提到探索台灣原民文化最好的方式是？", options: ["在家看電視", "走進部落體驗美景與美食", "只看書本"], ans: 1 },
-          ];
+.stats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-top: 18px;
+}
 
-          const handleToggleCard = (card) => {
-            if (selectedCards.find(c => c.id === card.id)) {
-              setSelectedCards(prev => prev.filter(c => c.id !== card.id));
-            } else {
-              if (selectedCards.length < TARGET_COUNT) {
-                setSelectedCards(prev => [...prev, card].sort((a, b) => a.id - b.id));
-              }
-            }
-          };
+.stats div {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 16px;
+  background: var(--panel);
+}
 
-          const handleStartQuiz = () => {
-            if (selectedCards.length === TARGET_COUNT) {
-              setPhase('quiz');
-              setCurrentCardIdx(0);
-              setScore(0);
-              setIsAnswered(false);
-              setIsCorrect(false);
-            }
-          };
+.stats span {
+  display: block;
+  color: var(--muted);
+  font-size: 14px;
+}
 
-          const handleAnswer = (idx) => {
-            if (isAnswered) return;
-            const currentCard = selectedCards[currentCardIdx];
-            const correct = idx === currentCard.ans;
-            setIsAnswered(true);
-            setIsCorrect(correct);
-            if(correct) setScore(s => s + 1);
-          };
+.stats strong {
+  font-size: 34px;
+}
 
-          const handleNextQuestion = () => {
-            if (currentCardIdx < TARGET_COUNT - 1) {
-              setCurrentCardIdx(prev => prev + 1);
-              setIsAnswered(false);
-              setIsCorrect(false);
-            } else {
-              setPhase('summary');
-            }
-          };
+.inventory-panel,
+.history-panel {
+  padding: 22px;
+}
 
-          const resetAll = () => {
-            setSelectedCards([]);
-            setPhase('select');
-          };
+.panel-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 16px;
+}
 
-          return (
-            <div className="flex flex-col items-center justify-center min-h-full bg-amber-50 p-4">
-              <div className="md:absolute md:top-4 md:left-4 mb-4 md:mb-0 bg-amber-600 text-white px-4 py-2 rounded-full font-bold flex items-center gap-2 z-10 shadow">
-                <CreditCard size={20} /> Zone B：卡片解密測驗
-              </div>
+.panel-title h2 {
+  margin: 0;
+  font-size: 28px;
+}
 
-              {phase === 'select' && (
-                <div className="w-full max-w-5xl text-center animate-in zoom-in h-full flex flex-col flex-1 pb-20 md:pb-0">
-                  <div className="mb-4">
-                    <h2 className="text-2xl md:text-3xl font-black text-amber-900 mb-2">請選擇卡片上的 {TARGET_COUNT} 個號碼</h2>
-                    <p className="text-amber-600 font-bold">
-                      目前已選擇：
-                      <span className="text-2xl mx-2 font-black text-stone-800">
-                        {selectedCards.length} / {TARGET_COUNT}
-                      </span>
-                    </p>
-                  </div>
-                  
-                  <div className="flex-1 overflow-y-auto px-2 no-scrollbar min-h-0">
-                    <div className="grid grid-cols-4 md:grid-cols-5 gap-3">
-                      {cardData.map((card) => {
-                        const isSelected = selectedCards.find(c => c.id === card.id);
-                        return (
-                          <button
-                            key={card.id}
-                            onClick={() => handleToggleCard(card)}
-                            className={`aspect-square rounded-2xl shadow-md border-b-4 flex flex-col items-center justify-center group transition-all duration-200 ${
-                              isSelected 
-                                ? 'bg-amber-500 border-amber-700 -translate-y-1' 
-                                : 'bg-white border-amber-200 hover:border-amber-400'
-                            }`}
-                          >
-                            <span className={`text-3xl font-black transition-colors ${isSelected ? 'text-white' : 'text-stone-300 group-hover:text-amber-500'}`}>
-                              {card.id.toString().padStart(2, '0')}
-                            </span>
-                            <span className={`text-xs font-bold mt-1 px-1 truncate w-full ${isSelected ? 'text-white' : 'text-stone-500'}`}>
-                              {card.title}
-                            </span>
-                            {isSelected && <CheckCircle2 className="absolute top-2 right-2 text-white" size={20} />}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
+.icon-button {
+  background: var(--ink);
+  color: white;
+}
 
-                  <div className="w-full flex justify-center mt-4 pb-4 md:pb-0 sticky bottom-0 bg-amber-50/95 p-4 backdrop-blur-sm">
-                    <button 
-                      onClick={handleStartQuiz}
-                      disabled={selectedCards.length !== TARGET_COUNT}
-                      className={`w-full md:w-auto px-12 py-4 rounded-full font-black text-2xl shadow-xl flex items-center justify-center gap-3 transition-all transform ${
-                        selectedCards.length === TARGET_COUNT 
-                          ? 'bg-stone-800 text-white hover:bg-stone-700 hover:scale-105 active:scale-95 cursor-pointer' 
-                          : 'bg-stone-300 text-stone-500 cursor-not-allowed'
-                      }`}
-                    >
-                      {selectedCards.length === TARGET_COUNT ? "開始解密" : `請再選 ${TARGET_COUNT - selectedCards.length} 個`} <ArrowRight />
-                    </button>
-                  </div>
-                </div>
-              )}
+.icon-button.unlocked {
+  background: var(--yellow);
+  color: var(--ink);
+}
 
-              {phase === 'quiz' && (
-                <div className="w-full max-w-2xl animate-in slide-in-from-right flex flex-col h-full md:block overflow-y-auto pb-4">
-                  <div className="flex justify-between items-center mb-6 px-2">
-                    <span className="text-amber-800 font-bold uppercase tracking-widest">
-                      任務進度 {currentCardIdx + 1} / {TARGET_COUNT}
-                    </span>
-                    <div className="flex gap-2">
-                      {selectedCards.map((c, i) => (
-                        <div key={i} className={`w-3 h-3 rounded-full ${i === currentCardIdx ? 'bg-amber-600' : i < currentCardIdx ? 'bg-green-500' : 'bg-gray-300'}`} />
-                      ))}
-                    </div>
-                  </div>
+.inventory-list {
+  display: grid;
+  gap: 10px;
+}
 
-                  <div className="bg-white p-8 rounded-3xl shadow-xl border-b-8 border-amber-200 mb-6 text-center">
-                    <div className="inline-block bg-amber-100 text-amber-800 px-4 py-1 rounded-full font-bold text-sm mb-4">
-                      卡片編號 #{selectedCards[currentCardIdx].id.toString().padStart(2, '0')}
-                    </div>
-                    <h3 className="text-2xl md:text-3xl font-black text-stone-800 leading-snug">
-                      {selectedCards[currentCardIdx].q}
-                    </h3>
-                  </div>
+.item-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px;
+  background: var(--panel);
+}
 
-                  <div className="grid gap-4 mb-20 md:mb-0">
-                    {selectedCards[currentCardIdx].options.map((opt, i) => (
-                      <button
-                        key={i}
-                        onClick={() => handleAnswer(i)}
-                        disabled={isAnswered}
-                        className={`p-5 rounded-xl font-bold text-xl text-left transition-all border-2 flex items-center justify-between ${
-                          isAnswered 
-                            ? i === selectedCards[currentCardIdx].ans 
-                              ? 'bg-green-500 text-white border-green-600 shadow-md' 
-                              : 'bg-stone-100 text-stone-400 border-transparent'
-                            : 'bg-white text-stone-700 border-stone-200 hover:border-amber-400 hover:shadow-md hover:scale-[1.02]'
-                        }`}
-                      >
-                        <span>{opt}</span>
-                        {isAnswered && i === selectedCards[currentCardIdx].ans && <Check size={28} className="animate-bounce" />}
-                      </button>
-                    ))}
-                  </div>
+.item-row strong {
+  overflow-wrap: anywhere;
+}
 
-                  {isAnswered && (
-                    <div className="fixed bottom-0 left-0 w-full md:relative md:mt-8 bg-white/95 md:bg-transparent p-4 md:p-0 border-t md:border-t-0 border-stone-200 backdrop-blur-md md:backdrop-blur-none animate-in slide-in-from-bottom z-50 flex flex-col items-center text-center">
-                      <div className={`text-2xl md:text-3xl font-black mb-2 ${isCorrect ? 'text-green-600' : 'text-red-500'}`}>
-                        {isCorrect ? "答對了！" : "再看一次卡片喔！"}
-                      </div>
-                      <button 
-                        onClick={handleNextQuestion}
-                        className="w-full md:w-auto px-10 py-3 bg-stone-800 text-white rounded-full font-bold text-lg hover:bg-stone-700 shadow-lg flex items-center justify-center gap-2"
-                      >
-                        {currentCardIdx < TARGET_COUNT - 1 ? "下一題" : "查看結果"} <ArrowRight size={18}/>
-                      </button>
-                    </div>
-                  )}
-                </div>
-              )}
+.item-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
 
-              {phase === 'summary' && (
-                <div className="w-full max-w-lg text-center animate-in zoom-in bg-white p-10 rounded-3xl shadow-2xl border-4 border-amber-200 my-auto">
-                  <div className="text-8xl mb-6">{score === TARGET_COUNT ? '🏆' : '💪'}</div>
-                  <h2 className="text-4xl font-black text-amber-900 mb-4">挑戰完成！</h2>
-                  <p className="text-2xl text-stone-600 mb-8">
-                    你在 {TARGET_COUNT} 題中答對了 <span className="text-amber-600 font-bold text-4xl mx-2">{score}</span> 題
-                  </p>
-                  
-                  <div className="flex gap-4 justify-center">
-                    {score === TARGET_COUNT ? (
-                      <div className="bg-green-100 px-6 py-4 rounded-xl text-green-800 font-bold w-full">
-                        太棒了！<br/>你是部落知識王！
-                      </div>
-                    ) : (
-                      <div className="bg-stone-100 px-6 py-4 rounded-xl text-stone-600 font-bold w-full">
-                        別灰心！<br/>再仔細讀一下卡片喔！
-                      </div>
-                    )}
-                  </div>
+.item-controls input {
+  width: 86px;
+  min-height: 38px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0 10px;
+  text-align: center;
+}
 
-                  <button onClick={resetAll} className="mt-8 text-stone-400 underline hover:text-stone-600 flex items-center justify-center gap-2 mx-auto">
-                    <RefreshCw size={16}/> 接待下一位
-                  </button>
-                </div>
-              )}
-            </div>
-          );
-        };
+.delete-button {
+  min-height: 38px;
+  padding: 0 10px;
+  background: #ffe9e6;
+  color: var(--red);
+  border: 1px solid #f0b8b1;
+}
 
-        // --- Zone C: 名字的奧秘 ---
-        const NamingZone = () => {
-          const [phase, setPhase] = useState('teach');
-          const [slideIdx, setSlideIdx] = useState(0);
-          
-          const slides = [
-            { title: "名字的意義：大自然的連結", icon: "🏔️", content: "原住民的名字常常跟自然有關！\n例如：Cidal (太陽)、Panay (稻穗)、Lokay (鹿)。\n我們相信名字會給孩子大自然的力量。", color: "bg-teal-600" },
-            { title: "親子連名制", icon: "👨‍👩‍👧‍👦", content: "有些族群（如阿美族、泰雅族）的名字後面會加上爸爸或媽媽的名字。\n例如：Kolas (兒子) + Mayaw (爸爸) = Kolas Mayaw。\n這代表我們很重視家族的血脈與傳承。", color: "bg-blue-500" },
-            { title: "生命記憶與階級", icon: "👶", content: "有的名字是紀錄出生時發生的事（如下雨、颱風）。\n在排灣族或魯凱族，有些名字只有貴族或頭目才能使用，代表著特殊的身份與榮耀。", color: "bg-purple-500" }
-          ];
+.inventory-form {
+  display: grid;
+  grid-template-columns: 1fr 110px auto;
+  gap: 10px;
+  align-items: end;
+  margin-top: 14px;
+}
 
-          const fullQuestionBank = [
-             { q: "原住民族的名字和漢人名字有什麼不同？", opts: ["原住民族的名字通常有族語特色", "完全一樣", "都是三個字"], ans: 0 },
-            { q: "原住民族的傳統名字會和什麼有關？", opts: ["自然（山、河流）", "天氣（下雨）", "以上皆是"], ans: 2 },
-            { q: "有些原住民族的名字，後面會加上誰的名字？", opts: ["爸爸或媽媽", "鄰居", "老師"], ans: 0 },
-            { q: "如果名字叫 Panay (稻穗)，可能代表長輩希望他？", opts: ["很愛吃飯", "像稻穗一樣謙虛", "去種田"], ans: 1 },
-            { q: "名字裡有 Cidal (太陽)，通常代表什麼？", opts: ["像太陽一樣溫暖", "怕曬黑", "喜歡夏天"], ans: 0 },
-            { q: "為什麼有些原住民有兩個名字？", opts: ["方便不同場合使用", "想要兩個身份", "名字太長"], ans: 0 },
-            { q: "泰雅族的命名傳統，名字代表什麼？", opts: ["家族血統與傳承", "運動比賽", "新發明"], ans: 0 },
-            { q: "原住民族的名字為什麼這麼重要？", opts: ["代表文化與傳承", "考試比較好寫", "隨便取的"], ans: 0 },
-            { q: "原住民族傳統上怎麼稱呼對方？", opts: ["直接叫名字", "喂！", "只叫綽號"], ans: 0 },
-            { q: "以前有些孩子長大後，會繼承誰的名字？", opts: ["祖父母或父母", "老師", "偶像"], ans: 0 }
-          ];
+label {
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 800;
+}
 
-          const [quizQuestions, setQuizQuestions] = useState([]);
-          const [currentQ, setCurrentQ] = useState(0);
-          const [score, setScore] = useState(0);
-          const [showFeedback, setShowFeedback] = useState(false);
-          const [selectedOpt, setSelectedOpt] = useState(null);
+input {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0 12px;
+  color: var(--ink);
+  background: white;
+}
 
-          const nextSlide = () => {
-            if (slideIdx < slides.length - 1) {
-              setSlideIdx(prev => prev + 1);
-            } else {
-              const shuffled = [...fullQuestionBank].sort(() => 0.5 - Math.random());
-              setQuizQuestions(shuffled.slice(0, 3));
-              setPhase('quiz');
-              setCurrentQ(0);
-              setScore(0);
-            }
-          };
+.history-list {
+  max-height: 280px;
+  overflow: auto;
+  margin: 0;
+  padding-left: 24px;
+}
 
-          const prevSlide = () => {
-            if (slideIdx > 0) setSlideIdx(prev => prev - 1);
-          };
+.history-list li {
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
+}
 
-          const handleAnswer = (optIndex) => {
-            if (showFeedback) return;
-            setSelectedOpt(optIndex);
-            setShowFeedback(true);
-            if (optIndex === quizQuestions[currentQ].ans) {
-              setScore(s => s + 1);
-            }
-            setTimeout(() => {
-              if (currentQ < 2) {
-                setCurrentQ(q => q + 1);
-                setShowFeedback(false);
-                setSelectedOpt(null);
-              } else {
-                setPhase('result');
-              }
-            }, 1500);
-          };
+.hidden {
+  display: none;
+}
 
-          const restart = () => {
-            setPhase('teach');
-            setSlideIdx(0);
-          };
+dialog {
+  border: 0;
+  padding: 0;
+  border-radius: 8px;
+}
 
-          return (
-            <div className="flex flex-col items-center justify-center min-h-full bg-violet-50 p-4">
-              <div className="md:absolute md:top-4 md:left-4 mb-4 md:mb-0 bg-violet-600 text-white px-4 py-2 rounded-full font-bold flex items-center gap-2 z-10 shadow">
-                <UserCheck size={20} /> Zone C：名字的奧秘
-              </div>
+dialog::backdrop {
+  background: rgba(23, 33, 38, 0.42);
+}
 
-              {phase === 'teach' && (
-                <div className="w-full max-w-2xl text-center animate-in zoom-in flex flex-col flex-1 py-4 md:py-16">
-                  <div className="bg-white p-8 rounded-3xl shadow-2xl border-4 border-violet-100 flex flex-col justify-center items-center flex-1 min-h-[420px]">
-                    <div className="flex gap-2 mb-6">
-                      {slides.map((_, i) => (
-                        <div key={i} className={`w-3 h-3 rounded-full ${i === slideIdx ? 'bg-violet-600' : 'bg-gray-200'}`} />
-                      ))}
-                    </div>
-                    <div className="text-8xl mb-6">{slides[slideIdx].icon}</div>
-                    <h2 className={`text-2xl md:text-3xl font-black mb-6 ${slides[slideIdx].color} text-white px-6 py-2 rounded-full shadow-md`}>
-                      {slides[slideIdx].title}
-                    </h2>
-                    <div className="text-lg md:text-xl text-gray-600 font-bold leading-relaxed whitespace-pre-line text-left md:text-center w-full">
-                      {slides[slideIdx].content}
-                    </div>
-                  </div>
-                  
-                  <div className="flex justify-between mt-8 gap-4 w-full sticky bottom-0 bg-violet-50 pb-4 md:relative md:bg-transparent md:pb-0">
-                    <button onClick={prevSlide} disabled={slideIdx === 0} className={`flex-1 px-6 py-3 rounded-xl font-bold flex items-center justify-center gap-2 ${slideIdx === 0 ? 'text-gray-300' : 'bg-white text-violet-600 shadow-md hover:bg-violet-50'}`}>
-                      <ChevronLeft /> 上一頁
-                    </button>
-                    <button onClick={nextSlide} className="flex-[2] px-6 py-3 bg-violet-600 text-white rounded-xl font-black text-xl shadow-lg hover:bg-violet-700 flex items-center justify-center gap-2">
-                      {slideIdx === slides.length - 1 ? "開始挑戰！" : "下一頁"} <ChevronRight />
-                    </button>
-                  </div>
-                </div>
-              )}
+.dialog-card {
+  width: min(380px, calc(100vw - 28px));
+  padding: 24px;
+  display: grid;
+  gap: 12px;
+}
 
-              {phase === 'quiz' && quizQuestions.length > 0 && (
-                <div className="w-full max-w-2xl animate-in slide-in-from-right h-full overflow-y-auto pt-4 pb-20">
-                  <div className="flex justify-between items-center mb-6 px-2">
-                    <span className="text-violet-400 font-bold uppercase tracking-widest">Question {currentQ + 1} / 3</span>
-                    <span className="bg-violet-200 text-violet-800 px-3 py-1 rounded-full font-bold text-sm">Score: {score}</span>
-                  </div>
-                  <div className="bg-white p-8 rounded-3xl shadow-xl border-b-8 border-violet-200 mb-6 min-h-[180px] flex items-center justify-center">
-                    <h3 className="text-2xl font-black text-gray-800 leading-snug text-center">
-                      {quizQuestions[currentQ].q}
-                    </h3>
-                  </div>
-                  <div className="grid gap-4">
-                    {quizQuestions[currentQ].opts.map((opt, i) => (
-                      <button
-                        key={i}
-                        onClick={() => handleAnswer(i)}
-                        disabled={showFeedback}
-                        className={`p-4 rounded-xl font-bold text-lg text-left transition-all border-2 ${
-                          showFeedback 
-                            ? i === quizQuestions[currentQ].ans 
-                              ? 'bg-green-500 text-white border-green-600 scale-105' 
-                              : i === selectedOpt 
-                                ? 'bg-red-500 text-white border-red-600'
-                                : 'bg-gray-100 text-gray-400 border-transparent'
-                            : 'bg-white text-gray-700 border-gray-200 hover:border-violet-400 hover:shadow-md'
-                        }`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full border-2 border-current flex items-center justify-center text-sm opacity-50">
-                            {String.fromCharCode(65 + i)}
-                          </div>
-                          {opt}
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
+.dialog-card h2,
+.dialog-card p {
+  margin: 0;
+}
 
-              {phase === 'result' && (
-                <div className="animate-in zoom-in bg-white p-10 rounded-3xl shadow-2xl border-4 border-violet-100 text-center max-w-md w-full my-auto">
-                  <div className="text-8xl mb-6">{score === 3 ? '🎉' : '📚'}</div>
-                  <h2 className="text-4xl font-black text-violet-900 mb-4">挑戰結束！</h2>
-                  <p className="text-2xl text-gray-600 mb-8">
-                    你答對了 <span className="text-violet-600 font-bold text-4xl mx-2">{score}</span> 題
-                  </p>
-                  <button onClick={restart} className="text-gray-400 underline hover:text-violet-600 flex items-center justify-center gap-2 mx-auto">
-                    <RefreshCw size={16}/> 重新開始
-                  </button>
-                </div>
-              )}
-            </div>
-          );
-        };
+.error {
+  min-height: 20px;
+  color: var(--red);
+  font-weight: 800;
+}
 
-        // --- Zone D: 埋藏的盒子 (點擊即抽獎版 - 包含模擬資料) ---
-        const LotteryZone = () => {
-          const [state, setState] = useState('idle');
-          const [prize, setPrize] = useState(null);
-          const [errorMsg, setErrorMsg] = useState("");
+@media (max-width: 860px) {
+  .app {
+    grid-template-columns: 1fr;
+  }
 
-          // 使用者提供的獎品清單與數量
-          const demoPrizes = [
-            { name: "衛生紙", count: 30, type: "small" },
-            { name: "三合一充電線", count: 15, type: "big" },
-            { name: "滑鼠墊", count: 10, type: "big" },
-            { name: "筆記本", count: 16, type: "small" },
-            { name: "帆布袋", count: 12, type: "big" },
-            { name: "杯墊", count: 20, type: "small" },
-            { name: "扇子", count: 54, type: "small" },
-            { name: "資料夾", count: 44, type: "small" },
-            { name: "聯名包", count: 25, type: "big" },
-            { name: "馬克杯", count: 5, type: "big" },
-          ];
+  .draw-panel {
+    min-height: auto;
+    grid-row: auto;
+  }
 
-          const drawPrize = async () => {
-            if (state === 'drawing') return;
-            setState('drawing');
-            setErrorMsg("");
-            try {
-              if (GAS_API_URL && GAS_API_URL !== "https://script.google.com/macros/s/AKfycbzCJVchaq7JMq1SJvNNNHzj1ojJDgmcffgoscCnrN5lx32_RvAzy1NSQT-VJWLush4/exec") {
-                // 如果有設定真實後台網址，嘗試連線
-                const timestamp = new Date().getTime();
-                const response = await fetch(`${GAS_API_URL}?action=draw&t=${timestamp}`, {
-                  method: "GET",
-                  mode: 'cors',
-                  credentials: 'omit',
-                  redirect: 'follow',
-                  headers: { "Content-Type": "text/plain;charset=utf-8" },
-                });
-                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-                const data = await response.json();
-                if (data.error === "No prizes left!") {
-                   setPrize(data.prize || { name: "銘謝惠顧", type: "none" });
-                   setState('result');
-                   return; 
-                }
-                if (data.error) throw new Error(data.error);
-                setPrize(data.prize);
-              } else {
-                // 模擬抽獎模式 (依照數量加權)
-                await new Promise(r => setTimeout(r, 1500));
-                
-                // 建立加權池
-                let weightedPool = [];
-                demoPrizes.forEach(p => {
-                    for(let i=0; i<p.count; i++) weightedPool.push(p);
-                });
-                
-                const randomPrize = weightedPool[Math.floor(Math.random() * weightedPool.length)];
-                setPrize(randomPrize);
-              }
-              setState('result');
-            } catch (err) {
-              console.error(err);
-              setErrorMsg(err.message);
-              // 連線失敗時切換到備用抽獎
-              const randomPrize = demoPrizes[Math.floor(Math.random() * demoPrizes.length)];
-              setPrize(randomPrize);
-              setState('result');
-            }
-          };
+  .inventory-form {
+    grid-template-columns: 1fr;
+  }
+}
+</style>
+  </head>
+  <body>
+    <main class="app">
+      <section class="status-bar" aria-live="polite">
+        <span id="modeBadge">本機模式</span>
+        <span id="modeHint">尚未設定資料庫，先用本機資料。</span>
+      </section>
 
-          const reset = () => { 
-            setState('idle'); 
-            setPrize(null);
-          };
+      <section class="draw-panel">
+        <div class="brand">
+          <p>市集擺攤</p>
+          <h1>抽獎系統</h1>
+        </div>
 
-          return (
-            <div className="flex flex-col items-center justify-center h-full bg-indigo-900 p-4 relative overflow-hidden">
-              <div className="absolute top-4 left-4 bg-indigo-500 text-white px-4 py-2 rounded-full font-bold flex items-center gap-2 border border-indigo-400 z-10">
-                <Gift size={20} /> Zone D：埋藏的盒子
-              </div>
-              <div className="z-10 w-full max-w-lg text-center">
-                {state === 'idle' && (
-                  <div className="animate-in zoom-in">
-                    <div className="text-6xl mb-8 animate-bounce">📦</div>
-                    <h2 className="text-3xl font-black text-white mb-4">我們找到盒子了！</h2>
-                    <button onClick={drawPrize} className="px-12 py-6 bg-yellow-500 text-yellow-900 text-3xl font-black rounded-full shadow-lg hover:scale-105 transition-transform active:scale-95">打開盒子</button>
-                    {errorMsg && <div className="mt-4 text-red-300 text-sm">連線異常，已切換至備用模式</div>}
-                  </div>
-                )}
-                {state === 'drawing' && <div className="text-white text-2xl font-bold animate-pulse">解鎖中...</div>}
-                {state === 'result' && prize && (
-                  <div className="bg-white p-10 rounded-3xl shadow-2xl animate-in zoom-in transform rotate-1">
-                     <div className="text-8xl mb-4">{prize.type === 'big' ? '🏆' : '🍬'}</div>
-                     <h3 className="text-indigo-400 font-bold uppercase tracking-widest mb-2">獲得信物</h3>
-                     <h2 className="text-4xl font-black text-indigo-600 mb-4">{prize.name}</h2>
-                     <button onClick={reset} className="text-gray-400 underline">再試一次</button>
-                  </div>
-                )}
-              </div>
-            </div>
-          );
-        };
+        <div class="winner-box" aria-live="polite">
+          <span id="winnerLabel">準備抽獎</span>
+          <strong id="winnerName">按下按鈕開始</strong>
+        </div>
 
-        // --- 主框架 ---
-        function InteractiveApp() {
-          const [activeZone, setActiveZone] = useState('A');
+        <div class="actions">
+          <button id="drawButton" class="primary">抽獎</button>
+          <button id="undoButton" class="secondary">復原上一抽</button>
+        </div>
 
-          return (
-            <div className="flex w-full h-[100dvh] bg-stone-900 font-sans text-gray-800 overflow-hidden select-none">
-              <div className="w-16 md:w-64 bg-stone-800 h-full flex flex-col shadow-2xl z-20 border-r border-stone-700">
-                <div className="p-2 md:p-6 bg-stone-900 border-b border-stone-700 flex flex-col items-center md:items-start">
-                  <h1 className="text-white font-black text-xl flex flex-col md:flex-row items-center gap-2">
-                    <Map className="text-amber-500" />
-                    <span className="hidden md:inline">2026世界母語日</span>
-                  </h1>
-                  <span className="hidden md:block text-sm text-amber-500 font-bold mt-1">makila kuman</span>
-                </div>
-                <div className="flex-1 py-4 space-y-2 overflow-y-auto no-scrollbar">
-                  <NavBtn id="A" title="原住民文化知識通" icon={BookOpen} active={activeZone === 'A'} onClick={() => setActiveZone('A')} color="text-amber-400" />
-                  <NavBtn id="B" title="卡片解密測驗" icon={Edit3} active={activeZone === 'B'} onClick={() => setActiveZone('B')} color="text-sky-400" />
-                  <NavBtn id="C" title="名字的奧秘" icon={UserCheck} active={activeZone === 'C'} onClick={() => setActiveZone('C')} color="text-violet-400" />
-                  <div className="my-2 border-t border-stone-700 mx-2 md:mx-4"></div>
-                  <NavBtn id="D" title="埋藏的盒子" icon={Gift} active={activeZone === 'D'} onClick={() => setActiveZone('D')} color="text-indigo-400" />
-                </div>
-              </div>
-              {/* 加入 overflow-hidden 並讓子元素處理滾動，或直接 overflow-y-auto */}
-              <div className="flex-1 h-full relative bg-stone-100 overflow-y-auto no-scrollbar">
-                {activeZone === 'A' && <TribeIntroZone />}
-                {activeZone === 'B' && <TribeQuizZone />}
-                {activeZone === 'C' && <NamingZone />}
-                {activeZone === 'D' && <LotteryZone />}
-              </div>
-            </div>
-          );
-        }
+        <div class="stats">
+          <div>
+            <span>剩餘總數</span>
+            <strong id="totalStock">0</strong>
+          </div>
+          <div>
+            <span>已抽次數</span>
+            <strong id="drawCount">0</strong>
+          </div>
+        </div>
+      </section>
 
-        const NavBtn = ({ id, title, icon: Icon, active, onClick, color }) => (
-          <button onClick={onClick} className={`w-full p-3 md:p-4 flex flex-col md:flex-row items-center gap-1 md:gap-4 transition-all relative group ${active ? 'bg-stone-700' : 'hover:bg-stone-700/50'}`}>
-            <div className={`p-2 rounded-lg ${active ? 'bg-stone-900' : 'bg-stone-800 group-hover:bg-stone-900'}`}><Icon className={color} size={24} /></div>
-            <div className={`text-center md:text-left text-xs md:text-base font-bold ${active ? 'text-white' : 'text-stone-400 hidden md:block'}`}>{title}</div>
-            {active && <div className={`absolute left-0 top-0 bottom-0 w-1 ${color.replace('text', 'bg')}`} />}
-          </button>
-        );
+      <section class="inventory-panel">
+        <div class="panel-title">
+          <div>
+            <p>庫存</p>
+            <h2>獎品清單</h2>
+          </div>
+          <button id="unlockButton" class="icon-button" title="解鎖修改庫存">鎖定</button>
+        </div>
 
-        // 渲染到頁面
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<InteractiveApp />);
-    </script>
-</body>
+        <div id="inventoryList" class="inventory-list"></div>
+
+        <form id="inventoryForm" class="inventory-form hidden">
+          <label>
+            獎品名稱
+            <input id="itemName" type="text" placeholder="例如：貼紙包" autocomplete="off" />
+          </label>
+          <label>
+            數量
+            <input id="itemStock" type="number" min="0" step="1" value="1" />
+          </label>
+          <button type="submit" class="secondary">新增獎品</button>
+        </form>
+      </section>
+
+      <section class="history-panel">
+        <div class="panel-title">
+          <div>
+            <p>紀錄</p>
+            <h2>得獎紀錄</h2>
+          </div>
+          <button id="exportButton" class="secondary small">匯出</button>
+        </div>
+        <ol id="historyList" class="history-list"></ol>
+      </section>
+    </main>
+
+    <dialog id="passwordDialog">
+      <form method="dialog" id="passwordForm" class="dialog-card">
+        <h2>輸入密碼</h2>
+        <p>修改庫存需要密碼。</p>
+        <input id="passwordInput" type="password" placeholder="密碼" autocomplete="current-password" />
+        <span id="passwordError" class="error"></span>
+        <div class="dialog-actions">
+          <button value="cancel" class="secondary">取消</button>
+          <button id="passwordSubmit" value="default" class="primary">解鎖</button>
+        </div>
+      </form>
+    </dialog>
+
+    <script src="app.js"></script>
+  </body>
 </html>
